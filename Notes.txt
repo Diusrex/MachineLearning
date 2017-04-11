@@ -1,0 +1,11 @@
+Will have everything follow sk learn ideas:
+    Class initialized with standard parameters
+    Then fit
+    Then predict
+    
+Should later look at improving python ecosystem
+    http://stackoverflow.com/questions/10095037/why-use-sys-path-appendpath-instead-of-sys-path-insert1-path
+    http://mirnazim.org/writings/python-ecosystem-introduction/
+    
+Datasets:
+    http://scikit-learn.org/stable/modules/classes.html#module-sklearn.datasets
