@@ -46,6 +46,21 @@ class RangeScalerTests(unittest.TestCase):
         
         X_restored = scaler.restore(X_trans)
         nptest.assert_allclose(X_restored, X)
+        
+    def testDifferentRanges(self):
+        X = np.matrix('1 2; 3 4; 5 10')
+        
+        scaler = RangeScaler()
+        nptest.assert_allclose(scaler.fit_transform(X),
+                               np.matrix('0 0; 0.5 0.25; 1 1'))
+        
+        scaler = RangeScaler(range_min=-1)
+        nptest.assert_allclose(scaler.fit_transform(X),
+                               np.matrix('-1 -1; 0 -0.5; 1 1'))
+        
+        scaler = RangeScaler(range_min=1, range_max=2)
+        nptest.assert_allclose(scaler.fit_transform(X),
+                               np.matrix('1 1; 1.5 1.25; 2 2'))
     
     def testFitMultipleAndRestore(self):
         scaler = RangeScaler()

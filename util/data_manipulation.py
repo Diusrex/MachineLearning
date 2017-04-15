@@ -8,8 +8,8 @@ class BaseScaler(ABC):
         x' = (x - constant_adjustment) / factor_adjustment
     """
     def __init__(self):
-        self._constant_adjustment = None
-        self._factor_adjustment = None
+        self._constant_reduction = None
+        self._factor_divisor = None
         
     def fit_transform(self, X):
         self.fit(X)
@@ -18,14 +18,14 @@ class BaseScaler(ABC):
     def fit(self, X):
         ncols = X.shape[1]
         
-        self._constant_adjustment = np.zeros(ncols)
-        self._factor_adjustment = np.zeros(ncols)
-        for column, index in zip(X.T, range(ncols)):
-            self._constant_adjustment[index] = self._calculate_constant_adjustment(column)
-            self._factor_adjustment[index] = self._calculate_factor_adjustment(column)
+        self._constant_reduction = np.zeros(ncols)
+        self._factor_divisor = np.zeros(ncols)
+        for index, column in enumerate(X.T):
+            self._constant_reduction[index] = self._calculate_constant_reduction(column)
+            self._factor_divisor[index] = self._calculate_factor_divisor(column)
         
     @abstractmethod
-    def _calculate_constant_adjustment(self, column):
+    def _calculate_constant_reduction(self, column):
         """
         Column is reduced by this factor before doing factor adjustment.
         
@@ -36,7 +36,7 @@ class BaseScaler(ABC):
         pass
     
     @abstractmethod
-    def _calculate_factor_adjustment(self, column):
+    def _calculate_factor_divisor(self, column):
         """
         Column is divided by this factor after being subtracted by constant adjustment.
         
@@ -47,10 +47,10 @@ class BaseScaler(ABC):
         pass
     
     def transform(self, X):
-        return np.divide(X - self._constant_adjustment, self._factor_adjustment)
+        return np.divide(X - self._constant_reduction, self._factor_divisor)
     
     def restore(self, X):
-        return np.multiply(X, self._factor_adjustment) + self._constant_adjustment
+        return np.multiply(X, self._factor_divisor) + self._constant_reduction
     
     
 class StandardizationScaler(BaseScaler):
@@ -62,26 +62,31 @@ class StandardizationScaler(BaseScaler):
     
     """
         
-    def _calculate_constant_adjustment(self, column):
+    def _calculate_constant_reduction(self, column):
         return np.mean(column)
     
-    def _calculate_factor_adjustment(self, column):
+    def _calculate_factor_divisor(self, column):
         return np.std(column)
 
 
 class RangeScaler(BaseScaler):
     """
-    Will transform all variables to be in the range [0, 1].
+    Will transform all variables to be in the range [range_min, range_max].
     
     Calculation is:
-        x' = (x - min(x)) / (max(x) - min(x))
+        x' = (x - min(x) + range_min) / (max(x) - min(x)) * (range_max - range_min)
     
     """
-    def _calculate_constant_adjustment(self, column):
-        return np.min(column)
+    def __init__(self, range_min=0, range_max=1):
+        assert(range_min < range_max)
+        self._range_min = range_min
+        self._range_max = range_max
     
-    def _calculate_factor_adjustment(self, column):
-        return np.max(column) - np.min(column)
+    def _calculate_constant_reduction(self, column):
+        return np.min(column) - self._range_min * self._calculate_factor_divisor(column)
+    
+    def _calculate_factor_divisor(self, column):
+        return (np.max(column) - np.min(column)) / (self._range_max - self._range_min)
 
 class UnitLengthScaler(BaseScaler):
     """
@@ -92,7 +97,7 @@ class UnitLengthScaler(BaseScaler):
         x' = x / ||x||
     
     """
-    def _calculate_constant_adjustment(self, column):
+    def _calculate_constant_reduction(self, column):
         # Only divide column, not subtracting anything
         return 0
     
