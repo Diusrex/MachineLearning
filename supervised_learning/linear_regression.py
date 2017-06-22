@@ -12,6 +12,8 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
+from optimization_algorithms.optimizer import Optimizer
+from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
 
@@ -24,10 +26,11 @@ class LinearRegression(object):
     
     Parameters
     --------
-    graident_descent_options : GradientDescentOptions
-        Optional parameter. If provided, will calculate the weights with
-        gradient descent using the options.
-    
+    optimizer : optimization_algorithms.Optimizer
+        Optional parameter. If provided, will calculate the weights using L2 cost
+        function and this optimizer.
+        Will otherwise calculate the weights using the normal equation.
+        
     Theory
     --------
         - Highly dependent on output being predicted by a linear combination of \
@@ -39,35 +42,16 @@ class LinearRegression(object):
     
     Comments
     --------
-        - This just uses standard gradient descent which is slow for very large \
-        input sets. In those cases, a better option would probably be stochastic \
-        gradient descent.
+        - There is a tradeoff between using an optimizer and the normal equation:
+            
+            - Don't need to fiddle around with learning rate/other paramaeters with normal equation
+            - Normal equation is ~O(#features^3), so it can't really be used with a large (~1e4) # of features.
         
     """
-    class GradientDescentOptions(object):
-        """
-        Makes it easier to specify the different gradient descent options.
-        If provided to LinearRegression, then gradient descent will be used.
-        
-        Parameters
-        ---------
-        
-        num_iterations : integer
-            Specifies the number of iterations of gradient descent to be performed.
-        
-        learning_rate : numeric
-            Determines what speed the gradient descent will update the weights.
-            A too high or too low value may cause the gradient descent to not
-            converge.
-        
-        """
-        def __init__(self, num_iterations=20, learning_rate=0.001):
-            self._num_iterations = num_iterations
-            self._learning_rate = learning_rate
     
-    def __init__(self, graident_descent_options=None, print_out=False):
-        self._gradient_descent_options = graident_descent_options
-        self._print_out = print_out
+    
+    def __init__(self, optimizer=None):
+        self._optimizer = optimizer
         self._weights = None
         self._intercept = None
         self._coeff = None
@@ -84,15 +68,14 @@ class LinearRegression(object):
         X : array-like, shape [n_samples, n_features]
             Input array of features.
             
-        y : array-like, shape [n_samples,]
+        y : array-like, shape [n_samples,] or [n_samples,n_values]
             Input array of expected results. Can be 2 dimensional, if estimating
             multiple different values for each sample.
         """
-        
         # Add bias columns as first column
         X = np.insert(X, 0, 1, axis=1)
         
-        if self._gradient_descent_options == None:
+        if self._optimizer is None:
             # Compute using normal equation
             X_tran = X.T
             # inverse(X^T * X) * X^T * y
@@ -101,17 +84,25 @@ class LinearRegression(object):
         else:
             num_features = np.shape(X)[1]
             self._weights = np.zeros((num_features, ))
-            for _ in range(self._gradient_descent_options._num_iterations):
-                # XT * (y_estimate - y)
-                w_delta = -dot(X.T, dot(X, self._weights) - y)
-                
-                self._weights += self._gradient_descent_options._learning_rate * w_delta
+            self._weights, status = self._optimizer.optimize(
+                    X, y,
+                    self._weights,
+                    lambda X,theta : dot(X, theta),
+                    lambda X,pred,y : (mean_square_error(pred, y), dot(X.T, pred - y)))
+                    
+            if (status != Optimizer.Status.CONVERGED):
+                print("WARNING: Optimizer did not converge:", self._optimizer.converge_hints())
         
         self._intercept = self._weights[0]
         self._coeff = self._weights[1:]
         
     def predict(self, X):
         """
+        Predict the value(s) associated with each row in X.
+        
+        X must have the same size for n_features as the input this instance was
+        trained on.
+        
         Parameters
         ---------
         
@@ -139,8 +130,14 @@ if __name__ == "__main__":
     y_pred = linear_reg.predict(X_test)
     mse = mean_square_error(y_pred, y_test)
     
+    linear_reg_w_grad_desc = LinearRegression(optimizer=GradientDescent())
+    linear_reg_w_grad_desc.fit(X_train, y_train)
+    y_pred_w_grad_desc = linear_reg_w_grad_desc.predict(X_test)
+    mse_w_grad_desc = mean_square_error(y_pred_w_grad_desc, y_test)
+    
     plt.scatter(X_test, y_test, color="Black", label="Actual")
     plt.plot(X_test, y_pred, label="Estimate")
+    plt.plot(X_test, y_pred, label="Estimate using Optimizer")
     plt.legend(loc='lower right', fontsize=8)
-    plt.title("Linear Regression %.2f MSE)" % (mse))
+    plt.title("Linear Regression %.2f MSE Normal Eq, %.2f MSE Gradient Descent)" % (mse, mse_w_grad_desc))
     plt.show()
