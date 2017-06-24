@@ -120,7 +120,8 @@ class LinearRegression(object):
 
     def _cost_function(X, pred, y):
         cost = mean_square_error(pred, y)
-        gradient = dot(X.T, pred - y)
+        m = len(y)
+        gradient = 1/m * dot(X.T, pred - y)
         return (cost, gradient)
 
 if __name__ == "__main__":
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     y_pred = linear_reg.predict(X_test)
     mse = mean_square_error(y_pred, y_test)
     
-    linear_reg_w_grad_desc = LinearRegression(optimizer=OptimizerCostGraph(GradientDescent()))
+    linear_reg_w_grad_desc = LinearRegression(optimizer=OptimizerCostGraph(GradientDescent(num_iterations=2500)))
     linear_reg_w_grad_desc.fit(X_train, y_train)
     y_pred_w_grad_desc = linear_reg_w_grad_desc.predict(X_test)
     mse_w_grad_desc = mean_square_error(y_pred_w_grad_desc, y_test)

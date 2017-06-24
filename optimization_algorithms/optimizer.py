@@ -37,7 +37,9 @@ class Optimizer(ABC):
             Given X, theta should return the estimates for all n_samples in an array like object
         
         cost_function : function -> cost, gradient
-            Must return [cost, gradient] given X, predicted y, and actual y
+            Must return [cost, gradient] given X, predicted y, and actual y. Note that the
+            gradient will only be scaled by varaibles specific to the optimizer (like learning rate),
+            so any other scaling (like dividing by # examples) should be done by this function!
             
         Returns
         --------
