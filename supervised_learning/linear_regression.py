@@ -23,7 +23,7 @@ class LinearRegression(object):
     Standard Least Squares Linear predictor which can use least squares or
     gradient descent to fit provided data.
     
-    Will use all data as is, without any transformations.
+    Will add a bias term to X, and otherwise not alter the data at all.
     
     Parameters
     --------
@@ -31,15 +31,15 @@ class LinearRegression(object):
         Optional parameter. If provided, will calculate the weights using L2 cost
         function and this optimizer.
         Will otherwise calculate the weights using the normal equation.
-        
+    
     Theory
     --------
         - Highly dependent on output being predicted by a linear combination of \
         provided feature set (which may not be a linear combination of original \
         feature set).
-        - Has low variance
-        - Has high bias
-        - To reduce overfitting it may be helpful to prune the feature set.
+        - Has low variance and high bias
+            - More features it has, the more this shifts to high variance low bias.
+            - To reduce overfitting it may be helpful to prune the feature set.
     
     Comments
     --------
