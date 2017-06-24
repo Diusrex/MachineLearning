@@ -1,6 +1,3 @@
-import numpy as np
-from numpy import dot
-
 # Add base directory of project to path.
 import os
 import sys
@@ -27,9 +24,7 @@ class GradientDescent(Optimizer):
     convergence_graident : numeric
         Minimum gradient magnitude for the optimization to not have yet converged.
     """
-                
-    
-    def __init__(self, num_iterations=200, learning_rate=0.001, convergence_threshold=1e-6):
+    def __init__(self, num_iterations=200, learning_rate=0.01, convergence_threshold=1e-6):
         self._num_iterations = num_iterations
         self._learning_rate = learning_rate
         self._convergence_threshold = convergence_threshold
