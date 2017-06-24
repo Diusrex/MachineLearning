@@ -12,6 +12,7 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
+from optimization_algorithms.cost_graph import OptimizerCostGraph
 from optimization_algorithms.optimizer import Optimizer
 from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import mean_square_error
@@ -88,7 +89,7 @@ class LinearRegression(object):
                     X, y,
                     self._weights,
                     lambda X,theta : dot(X, theta),
-                    lambda X,pred,y : (mean_square_error(pred, y), dot(X.T, pred - y)))
+                    LinearRegression._cost_function)
                     
             if (status != Optimizer.Status.CONVERGED):
                 print("WARNING: Optimizer did not converge:", self._optimizer.converge_hints())
@@ -117,6 +118,10 @@ class LinearRegression(object):
     def get_feature_params(self):
         return self._coeff
 
+    def _cost_function(X, pred, y):
+        cost = mean_square_error(pred, y)
+        gradient = dot(X.T, pred - y)
+        return (cost, gradient)
 
 if __name__ == "__main__":
     # Just has one feature to make it easy to graph.
@@ -130,14 +135,15 @@ if __name__ == "__main__":
     y_pred = linear_reg.predict(X_test)
     mse = mean_square_error(y_pred, y_test)
     
-    linear_reg_w_grad_desc = LinearRegression(optimizer=GradientDescent())
+    linear_reg_w_grad_desc = LinearRegression(optimizer=OptimizerCostGraph(GradientDescent()))
     linear_reg_w_grad_desc.fit(X_train, y_train)
     y_pred_w_grad_desc = linear_reg_w_grad_desc.predict(X_test)
     mse_w_grad_desc = mean_square_error(y_pred_w_grad_desc, y_test)
     
+    plt.figure()
     plt.scatter(X_test, y_test, color="Black", label="Actual")
     plt.plot(X_test, y_pred, label="Estimate")
-    plt.plot(X_test, y_pred, label="Estimate using Optimizer")
+    plt.plot(X_test, y_pred_w_grad_desc, label="Estimate using Optimizer")
     plt.legend(loc='lower right', fontsize=8)
     plt.title("Linear Regression %.2f MSE Normal Eq, %.2f MSE Gradient Descent)" % (mse, mse_w_grad_desc))
     plt.show()
