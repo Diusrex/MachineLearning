@@ -9,7 +9,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
 from optimization_algorithms.gradient_descent import GradientDescent
-from util.data_operation import mean_square_error
+from util.data_operation import accuracy, mean_square_error
 from util.data_manipulation import train_test_split
 
 from supervised_learning.logistic_regression import LogisticRegression
@@ -28,12 +28,12 @@ if __name__ == "__main__":
     mse = mean_square_error(y_pred, y_test)
     
     y_pred_rounded = np.round(y_pred)
-    mse_rounded = mean_square_error(y_pred_rounded, y_test)
+    acc = accuracy(y_pred_rounded, y_test)
     
     plt.figure()
     plt.scatter(X_test, y_test, color="Black", label="Actual")
     plt.scatter(X_test, y_pred, color="Red", label="Prediction")
     plt.scatter(X_test, y_pred_rounded, color="Blue", label="Rounded Prediction")
     plt.legend(loc='center right', fontsize=8)
-    plt.title("Logistic Regression %.2f MSE, %.2f MSE with Rounding)" % (mse, mse_rounded))
+    plt.title("Logistic Regression %.2f MSE, %.2f%% Accuracy)" % (mse, acc*100))
     plt.show()

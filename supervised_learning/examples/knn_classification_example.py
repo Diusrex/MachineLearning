@@ -6,8 +6,7 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
-from optimization_algorithms.gradient_descent import GradientDescent
-from util.data_operation import mean_square_error
+from util.data_operation import accuracy
 from util.data_manipulation import train_test_split
 from util.graphing import class_estimation_graph
 
@@ -25,7 +24,7 @@ if __name__ == "__main__":
     classifier.fit(X_train, y_train)
     
     y_pred = classifier.predict(X_test)
-    mse = mean_square_error(y_pred, y_test)
+    acc = accuracy(y_pred, y_test)
     
     class_estimation_graph(n_classes, X_test, y_test, y_pred,
-                           "KNN (k=%d) %.2f MSE.\nShape is true class, color is estimate" % (k, mse))
+                           "Logistic Regression %.2f%% Accuracy.\nShape is true class, color is estimate" % (acc*100))
