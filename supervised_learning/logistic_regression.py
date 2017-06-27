@@ -13,6 +13,7 @@ from optimization_algorithms.optimizer import Optimizer
 from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
+from util.graphing import class_estimation_graph
 
 class LogisticRegression(object):
     """
