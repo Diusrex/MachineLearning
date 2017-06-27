@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn import datasets
 
 # Add base directory of project to path.
@@ -12,6 +11,7 @@ from supervised_learning.logistic_regression import LogisticRegression
 from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
+from util.graphing import class_estimation_graph
 
 class OneVsAllClassification(object):
     """
@@ -38,7 +38,7 @@ class OneVsAllClassification(object):
     Warning
     --------
     Do NOT use on classifiers like Neural Networks/Decision Trees which are
-    natively able to hand multiple different classifications at once.
+    natively able to handle multiple different classifications at once.
     """
     def __init__(self, classifier_constructor, provide_likelihood=False):
         self._classifier_constructor = classifier_constructor
@@ -97,9 +97,10 @@ def CreateDefaultLogisticRegression():
     return LogisticRegression(GradientDescent())
 
 if __name__ == "__main__":
+    n_classes = 4
     # Just has one feature to make it easy to graph.
     X, y = datasets.make_classification(n_samples=200, n_features=2, n_informative=2, n_redundant=0,
-                                        n_clusters_per_class=1, flip_y=0.1, n_classes=4)
+                                        n_clusters_per_class=1, flip_y=0.1, n_classes=n_classes)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
     
     logistic_reg = OneVsAllClassification(CreateDefaultLogisticRegression)
@@ -108,24 +109,5 @@ if __name__ == "__main__":
     y_pred = logistic_reg.predict(X_test)
     mse = mean_square_error(y_pred, y_test)
     
-    # TODO: Refactor into a utility class/function?
-    plt.figure()
-    true_class_shapes = ['o', 's', '*']
-    estimate_class_color = ['Blue', 'Green', 'Pink']
-    
-    for true_class in range(3):
-        true_class_test_indicies = (y_test == true_class)
-        for estimated_class in range(3):
-            estimated_class_test_indicies = (y_pred == estimated_class)
-            
-            X_test_indicies = X_test[true_class_test_indicies & estimated_class_test_indicies]
-            
-            label = None
-            if true_class == estimated_class:
-                label = "Correct shape + color for class " + str(true_class)
-            plt.scatter(X_test_indicies[:, 0], X_test_indicies[:, 1], marker=true_class_shapes[true_class],
-                        color=estimate_class_color[estimated_class], label = label)
-    
-    plt.legend(fontsize=8)
-    plt.title("Logistic Regression %.2f MSE.\nShape is true class, color is estimate" % (mse))
-    plt.show()
+    class_estimation_graph(n_classes, X_test, y_test, y_pred,
+                           "Logistic Regression %.2f MSE.\nShape is true class, color is estimate" % (mse))
