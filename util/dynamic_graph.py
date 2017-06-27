@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 # just draw all of the data at the end when final_update is called - more
 # efficient version! And to be able to handle inline graphing solution
 
-plt.ion()
 
 class DynamicGraph():
     """
@@ -37,6 +36,7 @@ class DynamicGraph():
     Best to not graph every point, but only every few points
     """
     def __init__(self, graph_title=None, xlabel=None, ylabel=None):
+        plt.ion()
         #Set up plot
         self.figure, self.ax = plt.subplots()
         self.lines, = self.ax.plot([],[], 'o', markersize=3)

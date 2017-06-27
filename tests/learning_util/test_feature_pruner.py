@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May  9 21:35:19 2017
-
-@author: Morgan
-"""
 import unittest
 import numpy as np
 import numpy.testing as nptest
