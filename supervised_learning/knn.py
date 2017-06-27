@@ -1,19 +1,7 @@
 import heapq
 import numpy as np
-import matplotlib.pyplot as plt
 
 from collections import Counter
-from sklearn import datasets
-
-# Add base directory of project to path.
-import os
-import sys
-dir_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(dir_path + "/..")
-
-from util.data_operation import mean_square_error
-from util.data_manipulation import train_test_split
-
 
 class KNN(object):
     """
@@ -184,51 +172,3 @@ class KNN_Classification(KNN):
         
         # Only want the value of first element provided
         return Counter(values).most_common(n=1)[0][0]
-
-
-def run_regression_example():
-    # Just using one feature to make it graphable
-    X, y = datasets.make_regression(n_samples=200, n_features=1, bias=150, noise=4)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
-    
-    reg = KNN_Regression(k=4)
-    
-    reg.fit(X_train, y_train)
-    
-    y_pred = reg.predict(X_test)
-    
-    mse = mean_square_error(y_pred, y_test)
-    
-    plt.scatter(X_test, y_test, color="Black", label="Actual")
-    plt.scatter(X_test, y_pred, color="Red", label="Prediction")
-    plt.legend(loc='lower right', fontsize=8)
-    plt.title("KNN Regression (%.2f MSE)" % mse)
-    plt.show()
-
-
-def run_classification_example():
-    # Just using one feature to make it graphable
-    X, y = datasets.make_classification(n_samples=200, n_features=1, n_informative=1, n_redundant=0,
-                                        n_clusters_per_class=1, flip_y=0.1)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
-    
-    reg = KNN_Classification(k=4)
-    
-    reg.fit(X_train, y_train)
-    
-    y_pred = reg.predict(X_test)
-    
-    mse = mean_square_error(y_pred, y_test)
-    
-    plt.scatter(X_test, y_test, color="Black", label="Actual")
-    plt.scatter(X_test, y_pred, color="Red", label="Prediction")
-    plt.legend(loc='lower right', fontsize=8)
-    plt.title("KNN Regression (%.2f MSE)" % mse)
-    plt.show()
-
-if __name__ == "__main__":
-    run_regression_example()
-    
-    run_classification_example()
