@@ -2,6 +2,56 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 
+def train_test_split(X, y, test_proportion=0.2, random_seed=None):
+    """
+    Will randomly separate the data up into wanted test + train split sizes.
+    
+    Can provide a seed if want the same split every run.
+    
+    Parameters
+    ----------
+    X : array-like, shape [n_samples,n_features]
+        All available input data.
+
+    y : array-like, shape [n_samples,n_outputs]
+        All available expected output data.
+        
+    test_proportion : numeric
+        Proportion of the data that should be used in testset.
+        Must be in range [0, 1]
+    
+    random_seed
+        If provided, used in np.random.seed to reseed the generator.
+    
+    Returns
+    -------
+    X_train : array-like, shape[n_samples*(1-test_proportion),n_features]
+        Input data for training the model
+        
+    X_test : array-like, shape[n_samples*test_proportion,n_features]
+        Input data for testing the model
+        
+    y_train : array-like, shape[n_samples*(1-test_proportion),n_outputs]
+        Output data for training the model
+    
+    y_test : array-like, shape[n_samples*test_proportion,n_outputs]
+        Output data for testing the model
+    
+    """
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
+    num_points = len(X)
+    perm = np.random.permutation(num_points)
+    X = X[perm]
+    y = y[perm]
+    
+    test_size = int(num_points * test_proportion)
+    train_size = num_points - test_size
+    
+    return X[:train_size], X[train_size:], y[:train_size], y[train_size:]
+
+
 class BaseScaler(ABC):
     """
     Performs some form of normalization on every provided column, with scaling of the form
