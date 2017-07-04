@@ -39,8 +39,10 @@ def class_estimation_graph(num_class, X, y, y_pred, formatted_title):
             label = None
             if true_class == estimated_class:
                 label = "Correct shape + color class " + str(true_class)
-            plt.scatter(X_indicies[:, 0], X_indicies[:, 1], marker=true_class_shapes[true_class],
-                        color=estimate_class_color[estimated_class], label = label)
+            
+            if len(X_indicies) > 0:
+                plt.scatter(X_indicies[:, 0], X_indicies[:, 1], marker=true_class_shapes[true_class],
+                            color=estimate_class_color[estimated_class], label = label)
     
     plt.legend(fontsize=8)
     plt.title(formatted_title)
