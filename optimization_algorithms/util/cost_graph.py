@@ -43,12 +43,12 @@ class OptimizerCostGraph(Optimizer):
         self._time_steps = []
         self._dynamic_graph = DynamicGraph(xlabel="Number Iterations", ylabel="Total Cost")
                 
-    def optimize(self, X, y, initial_theta, estimator_function, cost_function):
+    def optimize(self, X, y, initial_theta, cost_function):
         """
         See Optimizer class for a complete description of what this function is for.
         """
         final_theta, status =\
-            self._optimizer.optimize(X, y, initial_theta, estimator_function,
+            self._optimizer.optimize(X, y, initial_theta,
                                      self._cost_function(cost_function))
         
         self._dynamic_graph.final_update(self._time_steps, self._costs_over_time)
@@ -57,8 +57,8 @@ class OptimizerCostGraph(Optimizer):
     
     def _cost_function(self, problem_cost_function):
         
-        def update_cost_and_return(X, pred, y):
-            cost, gradient = problem_cost_function(X, pred, y)
+        def update_cost_and_return(X, theta, y):
+            cost, gradient = problem_cost_function(X, theta, y)
             
             # Check for mod then increment to ensure have a point for first run.
             if self._num_iterations % self._iterations_per_point == 0:

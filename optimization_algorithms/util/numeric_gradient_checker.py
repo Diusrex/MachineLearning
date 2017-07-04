@@ -57,15 +57,15 @@ class NumericGradientChecker(Optimizer):
         self._eps = eps
         self._acceptable_diff = acceptable_diff
                 
-    def optimize(self, X, y, initial_theta, estimator_function, cost_function):
+    def optimize(self, X, y, initial_theta, cost_function):
         """
         See Optimizer class for a complete description of what this function is for.
         """
         return self._optimizer.optimize(
-                X, y, initial_theta, estimator_function,
-                self._check_numberic_gradient(estimator_function, cost_function))
+                X, y, initial_theta,
+                self._check_numberic_gradient(cost_function))
     
-    def _check_numberic_gradient(self, estimator_function, cost_function):
+    def _check_numberic_gradient(self, cost_function):
         """
         Returns a function that wraps around the cost function for a ML algorithm.
         
@@ -73,8 +73,8 @@ class NumericGradientChecker(Optimizer):
         gradient from the cost function are consistent
         """
         
-        def check_numberic_gradient(X, pred, y, theta):
-            cost, gradient = cost_function(X, pred, y, theta)
+        def check_numberic_gradient(X, theta, y):
+            cost, gradient = cost_function(X, theta, y)
             
             num_features = gradient.shape[0]
             numerical_gradient = np.zeros((num_features,))
@@ -82,8 +82,8 @@ class NumericGradientChecker(Optimizer):
             nudge = np.zeros((num_features,))
             for feature in range(num_features):
                 nudge[feature] = self._eps
-                above_ret = cost_function(X, estimator_function(X, theta + nudge), y, theta)
-                below_ret = cost_function(X, estimator_function(X, theta - nudge), y, theta)
+                above_ret = cost_function(X, theta + nudge, y)
+                below_ret = cost_function(X, theta - nudge, y)
                 
                 numerical_gradient[feature] = (above_ret[0] - below_ret[0]) / (2 * self._eps)
                 

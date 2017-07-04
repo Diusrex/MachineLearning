@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import dot
 # pinv works with singular matricies
 from numpy.linalg import pinv
 
@@ -74,7 +73,7 @@ class LinearRegression(object):
             # Compute using normal equation
             X_tran = X.T
             # inverse(X^T * X) * X^T * y
-            self._weights = dot(pinv(dot(X_tran, X)), dot(X_tran, y))
+            self._weights = np.dot(pinv(np.dot(X_tran, X)), np.dot(X_tran, y))
                 
         else:
             num_features = np.shape(X)[1]
@@ -82,7 +81,6 @@ class LinearRegression(object):
             self._weights, status = self._optimizer.optimize(
                     X, y,
                     self._weights,
-                    lambda X,theta : dot(X, theta),
                     LinearRegression._cost_function)
                     
             if (status != Optimizer.Status.CONVERGED):
@@ -107,13 +105,14 @@ class LinearRegression(object):
         # Add bias columns as first column
         X = np.insert(X, 0, 1, axis=1)
         
-        return dot(X, self._weights)
+        return np.dot(X, self._weights)
     
     def get_feature_params(self):
         return self._coeff
 
-    def _cost_function(X, pred, y, theta):
+    def _cost_function(X, theta, y):
+        pred = np.dot(X, theta)
         cost = mean_square_error(pred, y) / 2
         m = len(y)
-        gradient = 1/m * dot(X.T, pred - y)
+        gradient = 1/m * np.dot(X.T, pred - y)
         return (cost, gradient)

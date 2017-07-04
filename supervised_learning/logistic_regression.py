@@ -7,6 +7,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
 from optimization_algorithms.optimizer import Optimizer
+from util.data_operation import sigmoid
 
 class LogisticRegression(object):
     """
@@ -65,7 +66,6 @@ class LogisticRegression(object):
         self._weights, status = self._optimizer.optimize(
                 X, y,
                 self._weights,
-                LogisticRegression._logistic_function,
                 LogisticRegression._cost_function)
 
         if (status != Optimizer.Status.CONVERGED):
@@ -97,13 +97,16 @@ class LogisticRegression(object):
     
     def _logistic_function(X, theta):
         value = np.dot(X, theta)
-        return 1 / (1 + np.exp(-value))
+        return sigmoid(value)
     
-    def _cost_function(X, pred, y, theta):
+    def _cost_function(X, theta, y):
         """
         Cost using the logistic function.
         """
+        pred = LogisticRegression._logistic_function(X, theta)
+        
         m = len(y)
+        # TODO: Refactor this into a cost + gradient function in data_operation?
         cost = 1/m * (-np.dot(y.T, np.log(pred)) - np.dot((1-y), np.log(1-pred)))
         gradient = 1/m * np.dot(X.T, (pred - y))
         return (cost, gradient)

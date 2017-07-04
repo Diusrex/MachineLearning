@@ -31,11 +31,10 @@ class GradientDescent(Optimizer):
         self._learning_rate = learning_rate
         self._convergence_threshold = convergence_threshold
                 
-    def optimize(self, X, y, initial_theta, estimator_function, cost_function):
+    def optimize(self, X, y, initial_theta, cost_function):
         theta = initial_theta
         for _ in range(self._num_iterations):
-            estimates = estimator_function(X, theta)
-            _, gradient = cost_function(X, estimates, y, theta)
+            _, gradient = cost_function(X, theta, y)
             
             if np.sum(np.abs(gradient)) < self._convergence_threshold:
                 return (theta, Optimizer.Status.CONVERGED)
