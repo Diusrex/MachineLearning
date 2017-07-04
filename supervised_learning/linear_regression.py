@@ -112,7 +112,7 @@ class LinearRegression(object):
     def get_feature_params(self):
         return self._coeff
 
-    def _cost_function(X, pred, y):
+    def _cost_function(X, pred, y, theta):
         cost = mean_square_error(pred, y) / 2
         m = len(y)
         gradient = 1/m * dot(X.T, pred - y)

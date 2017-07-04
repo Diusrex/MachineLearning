@@ -8,6 +8,7 @@ from supervised_learning.logistic_regression import LogisticRegression
 from supervised_learning.one_vs_all import OneVsAllClassification
 
 from optimization_algorithms.gradient_descent import GradientDescent
+from optimization_algorithms.util.numeric_gradient_checker import NumericGradientChecker
 
 from util.data_operation import accuracy
 from util.data_manipulation import train_test_split
@@ -130,4 +131,4 @@ class LogisticRegressionTester(ClassificationTester):
         self.runMultiClassClassification(one_vs_all_wrapper, expected_accuracy = 0.75)
     
     def _createLogisticRegression(self):
-        return LogisticRegression(GradientDescent())
+        return LogisticRegression(NumericGradientChecker(GradientDescent()))

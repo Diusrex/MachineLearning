@@ -6,6 +6,7 @@ from supervised_learning.knn import KNN_Regression
 from supervised_learning.linear_regression import LinearRegression
 
 from optimization_algorithms.gradient_descent import GradientDescent
+from optimization_algorithms.util.numeric_gradient_checker import NumericGradientChecker
 
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
@@ -73,7 +74,7 @@ class KNNRegressionTester(RegressionTester):
 class LinearRegressionTester(RegressionTester):
     
     def testLinearRegressionOptimizer(self):
-        algorithm = LinearRegression(optimizer=GradientDescent(learning_rate=0.1))
+        algorithm = LinearRegression(optimizer=NumericGradientChecker(GradientDescent(learning_rate=0.1)))
         
         # Expect only some minor fp inaccuracy
         self.runSingleLinearRegression(algorithm, max_mse = 1e-8)

@@ -99,7 +99,7 @@ class LogisticRegression(object):
         value = np.dot(X, theta)
         return 1 / (1 + np.exp(-value))
     
-    def _cost_function(X, pred, y):
+    def _cost_function(X, pred, y, theta):
         """
         Cost using the logistic function.
         """
