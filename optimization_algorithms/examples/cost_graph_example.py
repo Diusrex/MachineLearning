@@ -8,7 +8,7 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
-from optimization_algorithms.cost_graph import OptimizerCostGraph
+from optimization_algorithms.util.cost_graph import OptimizerCostGraph
 from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split

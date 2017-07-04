@@ -12,6 +12,8 @@ class OptimizerCostGraph(Optimizer):
     Wraps around an optimizer, and will print out a graph of the changing cost
     while the optimizer is running.
     
+    For an example, see cost_graph_example in optimization_algorithms.examples
+    
     Parameters
     ---------
     
@@ -56,7 +58,8 @@ class OptimizerCostGraph(Optimizer):
     def _cost_function(self, problem_cost_function):
         
         def update_cost_and_return(X, pred, y):
-            cost, gradient= problem_cost_function(X, pred, y)
+            cost, gradient = problem_cost_function(X, pred, y)
+            
             # Check for mod then increment to ensure have a point for first run.
             if self._num_iterations % self._iterations_per_point == 0:
                 
