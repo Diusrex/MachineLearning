@@ -6,3 +6,6 @@ def mean_square_error(pred, actual):
 
 def accuracy(pred, actual):
     return np.mean(pred == actual)
+
+def logistic_function(val):
+    return 1 / (1 + np.exp(-val))

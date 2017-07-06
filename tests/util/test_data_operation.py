@@ -1,7 +1,8 @@
 import unittest
 import numpy as np
+import numpy.testing as nptest
 
-from util.data_operation import mean_square_error
+from util.data_operation import mean_square_error, logistic_function
 
 class BasicOperationsTests(unittest.TestCase):
     
@@ -13,3 +14,10 @@ class BasicOperationsTests(unittest.TestCase):
         self.assertEqual(mean_square_error(X, X), 0)
         self.assertEqual(mean_square_error(X, Y),
                          19/4)
+
+    def testLogisticFunction(self):
+        self.assertEqual(logistic_function(0), 0.5)
+        
+        nptest.assert_allclose(np.array([0, 0.5, 1]),
+                               logistic_function(np.array([-100, 0, 100])),
+                               atol=1e-9)

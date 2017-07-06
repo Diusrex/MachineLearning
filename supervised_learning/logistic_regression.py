@@ -7,11 +7,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
 from optimization_algorithms.optimizer import Optimizer
-from util.data_operation import sigmoid
+from util.data_operation import logistic_function
 
 class LogisticRegression(object):
     """
-    Standard Logistic Regression classifier using the maximum likelihood model.
+    Standard Logistic Regression classifier using maximum likelihood cost function.
     
     Will add a bias term to X, and otherwise not alter the data at all.
     
@@ -97,11 +97,11 @@ class LogisticRegression(object):
     
     def _logistic_function(X, theta):
         value = np.dot(X, theta)
-        return sigmoid(value)
+        return logistic_function(value)
     
     def _cost_function(X, theta, y):
         """
-        Cost using the logistic function.
+        Cost using maximum likelihood.
         """
         pred = LogisticRegression._logistic_function(X, theta)
         
