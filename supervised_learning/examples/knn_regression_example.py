@@ -6,14 +6,14 @@ from sklearn import datasets
 import os
 import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(dir_path + "/..")
+sys.path.append(dir_path + "/../..")
 
 from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
 
 from supervised_learning.knn import KNN_Regression
 
-if __name__ == "__main__":
+def main():
     # Just using one feature to make it graphable
     X, y = datasets.make_regression(n_samples=200, n_features=1, bias=150, noise=4)
 
@@ -32,3 +32,6 @@ if __name__ == "__main__":
     plt.legend(loc='lower right', fontsize=8)
     plt.title("KNN Regression (%.2f MSE)" % mse)
     plt.show()
+
+if __name__ == "__main__":
+    main()

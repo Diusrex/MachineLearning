@@ -6,7 +6,7 @@ from sklearn import datasets
 import os
 import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(dir_path + "/..")
+sys.path.append(dir_path + "/../..")
 
 from optimization_algorithms.gradient_descent import GradientDescent
 from util.data_operation import accuracy, mean_square_error
@@ -14,7 +14,7 @@ from util.data_manipulation import train_test_split
 
 from supervised_learning.logistic_regression import LogisticRegression
 
-if __name__ == "__main__":
+def main():
     # Just has one feature to make it easy to graph.
     X, y = datasets.make_classification(n_samples=200, n_features=1, n_informative=1, n_redundant=0,
                                         n_clusters_per_class=1, flip_y=0.1)
@@ -37,3 +37,6 @@ if __name__ == "__main__":
     plt.legend(loc='center right', fontsize=8)
     plt.title("Logistic Regression %.2f MSE, %.2f%% Accuracy)" % (mse, acc*100))
     plt.show()
+
+if __name__ == "__main__":
+    main()
