@@ -1,5 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn import datasets
 
 # Add base directory of project to path.
@@ -10,7 +8,6 @@ sys.path.append(dir_path + "/../..")
 
 from optimization_algorithms.util.cost_graph import OptimizerCostGraph
 from optimization_algorithms.gradient_descent import GradientDescent
-from util.data_operation import mean_square_error
 from util.data_manipulation import train_test_split
 
 from supervised_learning.logistic_regression import LogisticRegression
@@ -31,19 +28,6 @@ def main(num_iterations=200, iterations_per_update=20):
                     iterations_per_update=iterations_per_update))
     logistic_reg.fit(X_train, y_train)
     
-    y_pred = logistic_reg.predict(X_test)
-    mse = mean_square_error(y_pred, y_test)
-    
-    y_pred_rounded = np.round(y_pred)
-    mse_rounded = mean_square_error(y_pred_rounded, y_test)
-    
-    plt.figure()
-    plt.scatter(X_test, y_test, color="Black", label="Actual")
-    plt.scatter(X_test, y_pred, color="Red", label="Prediction")
-    plt.scatter(X_test, y_pred_rounded, color="Blue", label="Rounded Prediction")
-    plt.legend(loc='center right', fontsize=8)
-    plt.title("Logistic Regression %.2f MSE, %.2f MSE with Rounding)" % (mse, mse_rounded))
-    plt.show()
 
 if __name__ == "__main__":
     main(num_iterations=20000, iterations_per_update=500)
