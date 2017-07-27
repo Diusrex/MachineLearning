@@ -301,6 +301,8 @@ class Kernel(object):
         """
         def calculate(u, v):
             return math.pow(np.dot(u, v), d)
+        
+        return calculate
     
     @staticmethod
     def polynomial_up_to_d(d):
@@ -315,6 +317,8 @@ class Kernel(object):
         """
         def calculate(u, v):
             return math.pow(np.dot(u, v) + 1, d)
+        
+        return calculate
     
     @staticmethod
     def gaussian_kernel(sigma):
