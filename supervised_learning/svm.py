@@ -1,4 +1,3 @@
-import cvxopt
 import math
 import numpy as np
 
@@ -16,6 +15,14 @@ def blockPrint():
 
 def enablePrint():
     sys.stdout = stout_backup
+
+# Relies on cvxopt being installed. If it isn't, mark file as not being usable.
+svm_able_to_run = True
+try:
+    import cvxopt
+except Exception as e:
+    svm_able_to_run = False
+
 
 class SVM(object):
     """

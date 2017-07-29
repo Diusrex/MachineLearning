@@ -9,13 +9,7 @@ from util.data_manipulation import train_test_split
 from util.data_generation import create_linearly_separable_two_class
 from util.graphing import class_estimation_graph
 
-able_to_run = True
-try:
-    # Is possible cvxopt is not installed
-    from supervised_learning.svm import SVM, Kernel
-except Exception as e:
-    able_to_run = False
-    print("WARNING: cvxopt not installed, SVM will not work.")
+from supervised_learning.svm import SVM, Kernel, svm_able_to_run
 
 from sklearn import datasets
 
@@ -48,10 +42,12 @@ def with_data_error_with_slack():
                            "SVM linear %.2f%% Accuracy.\nShape is true class, color is estimate" % (acc*100))
     
 def main():
-    if able_to_run:
+    if svm_able_to_run:
         linearly_separable()
         
         with_data_error_with_slack()
+    else:
+        print("WARNING: cvxopt not installed, SVM will not work.")
 
 if __name__ == "__main__":
     main()
