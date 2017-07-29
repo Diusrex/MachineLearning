@@ -172,3 +172,29 @@ class KNN_Classification(KNN):
         
         # Only want the value of first element provided
         return Counter(values).most_common(n=1)[0][0]
+
+    def classification_weight(self, X):
+        """
+        Rill return a weight in range -inf to inf of how sure the ML algorithm
+        is that the sample was class 1 (positive) or class 0 (negative).
+        
+        Parameters
+        ---------
+        
+        X : array-like, shape [n_samples, n_features]
+            Input array of features.
+            
+        Returns
+        ---------
+        Values ranging from -inf to +inf. If a sample is negative, would be classified
+        as class 0, and positive means would be classified as class 1. The greater the
+        magnitude, the more confident the ml would be.
+        """
+        old_aggregation = self._aggregation
+        
+        self._aggregation = np.sum
+        values = self.predict(X)
+        self._aggregation = old_aggregation
+        
+        # Difference between values and k is number of 
+        return (2 * values - self._k) / self._k

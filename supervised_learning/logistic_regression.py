@@ -116,6 +116,26 @@ class LogisticRegression(object):
         
         return values >= self._classification_boundary
     
+    def classification_weight(self, X):
+        """
+        Rill return a weight in range -inf to inf of how sure the ML algorithm
+        is that the sample was class 1 (positive) or class 0 (negative).
+        
+        Parameters
+        ---------
+        
+        X : array-like, shape [n_samples, n_features]
+            Input array of features.
+            
+        Returns
+        ---------
+        Values ranging from -inf to +inf. If a sample is negative, would be classified
+        as class 0, and positive means would be classified as class 1. The greater the
+        magnitude, the more confident the ml would be.
+        """
+        X = np.insert(X, 0, 1, axis=1)
+        return np.dot(X, self._weights)
+    
     def _logistic_function(X, theta):
         value = np.dot(X, theta)
         return logistic_function(value)

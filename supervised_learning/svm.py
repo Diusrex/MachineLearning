@@ -14,6 +14,7 @@ def blockPrint():
     sys.stdout = open(os.devnull, 'w')
 
 def enablePrint():
+    sys.stdout.close()
     sys.stdout = stout_backup
 
 # Relies on cvxopt being installed. If it isn't, mark file as not being usable.
@@ -51,10 +52,6 @@ class SVM(object):
         Shouldn't be 0 due to fp errors (everything would be selected as a support vector) which
         would elimitate some of the advantages of SVM (sparsity).
     
-    return_raw_values : boolean
-        Should the predict function return raw values, where the value for a row being > 1 is definitely
-        positive, < -1 is definitely negative, and in-between is less certain.
-    
     Theory
     --------
         - Tries to find the maximum margin, such that the points are all seprated correctly.
@@ -77,14 +74,13 @@ class SVM(object):
         - http://www.cs.cmu.edu/~guestrin/Class/10701-S07/Slides/kernels.pdf
             How to calculate the Kernel.
     """
-    def __init__(self, kernel_function, C = None, support_vector_min_weight = 5e-7, return_raw_values = False):
+    def __init__(self, kernel_function, C = None, support_vector_min_weight = 5e-7):
         if C is not None and C < support_vector_min_weight:
             raise ValueError("C must be >= support_vector_min_weight, otherwise no support vectors will be selected.")
         
         self._kernel_function = kernel_function
         self._C = C
         self._support_vector_min_weight = support_vector_min_weight
-        self._return_raw_values = return_raw_values
         
     def fit(self, X, y):
         """
@@ -253,18 +249,32 @@ class SVM(object):
             Input array of features.
         
         """
-        
         # Will calculate the value given to each row. If > 0, row is positive class, otherwise is negative class
         internal_results =\
             np.apply_along_axis(self._calculate_support_vectors_times_row, axis=1, arr=X) + self._b
         
-        if not self._return_raw_values:
-            internal_results = np.sign(internal_results)
-            # Transform from -1 or 1 to 0 or 1
-            return (internal_results + 1) / 2
+        internal_results = np.sign(internal_results)
+        # Transform from -1 or 1 to 0 or 1
+        return (internal_results + 1) / 2
+    
+    def classification_weight(self, X):
+        """
+        Rill return a weight in range -inf to inf of how sure the ML algorithm
+        is that the sample was class 1 (positive) or class 0 (negative).
         
-        # Leave in form where > 0 is positive, < 0 is negative, and < abs(1) means is not completely sure of result.
-        return internal_results
+        Parameters
+        ---------
+        X : array-like, shape [n_samples, n_features]
+            Input array of features.
+            
+        Returns
+        ---------
+        Values ranging from -inf to +inf. If a sample is negative, would be classified
+        as class 0, and positive means would be classified as class 1. The greater the
+        magnitude, the more confident the ml would be.
+        """
+        # Will calculate the value given to each row. If > 0, row is positive class, otherwise is negative class
+        return np.apply_along_axis(self._calculate_support_vectors_times_row, axis=1, arr=X) + self._b
     
     def _calculate_support_vectors_times_row(self, row):
         def multiply_by_support_vector(support_vector_index):
