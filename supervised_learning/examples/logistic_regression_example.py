@@ -21,7 +21,7 @@ def main():
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
     
-    logistic_reg = LogisticRegression(optimizer=GradientDescent(num_iterations=20000))
+    logistic_reg = LogisticRegression(optimizer=GradientDescent(num_iterations=20000), should_round=False)
     logistic_reg.fit(X_train, y_train)
     
     y_pred = logistic_reg.predict(X_test)
