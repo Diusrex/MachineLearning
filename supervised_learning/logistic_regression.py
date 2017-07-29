@@ -20,6 +20,12 @@ class LogisticRegression(object):
     optimizer : optimization_algorithms.Optimizer
         Will calculate the weights using the logistic function
     
+    classification_boundary : numeric or None
+        If provided, predict will classify samples given the boundary -
+        so points with probability >= classification_boundary will be class 1,
+        everything else will be class 0.
+        If None, predict will return the probability of the sample being class 1.
+        
     Theory
     --------
         - Highly dependent on decision boundary being linear combination of \
@@ -36,12 +42,23 @@ class LogisticRegression(object):
             for each class, determining how likely it is to occur. Then, for each new \
             input, class is the most likely class.
     """
-    
-    def __init__(self, optimizer):
+    def __init__(self, optimizer, classification_boundary = None):
         self._optimizer = optimizer
+        self._classification_boundary = classification_boundary
         self._weights = None
         self._intercept = None
         self._coeff = None
+        
+    def set_classification_boundary(self, classification_boundary):
+        """
+        If classification_boundary is numeric, predict will classify samples
+        given the boundary - so points with
+        probability >= classification_boundary will be class 1,
+        everything else will be class 0.
+        If classification_boundary is None, predict will return the probability
+        of the sample being class 1.
+        """
+        self._classification_boundary = classification_boundary
         
     def fit(self, X, y):
         """
@@ -93,7 +110,11 @@ class LogisticRegression(object):
         is 1. To choose most likely, use np.round.
         """
         X = np.insert(X, 0, 1, axis=1)
-        return LogisticRegression._logistic_function(X, self._weights)
+        values = LogisticRegression._logistic_function(X, self._weights)
+        if self._classification_boundary is None:
+            return values
+        
+        return values >= self._classification_boundary
     
     def _logistic_function(X, theta):
         value = np.dot(X, theta)

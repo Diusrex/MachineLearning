@@ -1,4 +1,3 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 
@@ -21,19 +20,20 @@ def main():
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
     
-    logistic_reg = LogisticRegression(optimizer=GradientDescent(num_iterations=20000), should_round=False)
+    logistic_reg = LogisticRegression(optimizer=GradientDescent(num_iterations=20000))
     logistic_reg.fit(X_train, y_train)
     
-    y_pred = logistic_reg.predict(X_test)
-    mse = mean_square_error(y_pred, y_test)
+    y_pred_probability = logistic_reg.predict(X_test)
+    mse = mean_square_error(y_pred_probability, y_test)
     
-    y_pred_rounded = np.round(y_pred)
-    acc = accuracy(y_pred_rounded, y_test)
+    logistic_reg.set_classification_boundary(0.5)
+    y_pred_classified = logistic_reg.predict(X_test)
+    acc = accuracy(y_pred_classified, y_test)
     
     plt.figure()
     plt.scatter(X_test, y_test, color="Black", label="Actual")
-    plt.scatter(X_test, y_pred, color="Red", label="Prediction")
-    plt.scatter(X_test, y_pred_rounded, color="Blue", label="Rounded Prediction")
+    plt.scatter(X_test, y_pred_probability, color="Red", label="Classification Probability")
+    plt.scatter(X_test, y_pred_classified, color="Blue", label="Rounded Prediction")
     plt.legend(loc='center right', fontsize=8)
     plt.title("Logistic Regression %.2f MSE, %.2f%% Accuracy)" % (mse, acc*100))
     plt.show()
