@@ -59,16 +59,16 @@ class KNNRegressionTester(RegressionTester):
     def testSingleLinearRegression1K(self):
         algorithm = KNN_Regression(1)
         
-        # Expect high amounts of error, although will not always be this high
+        # Expect high amounts of error, although will very rarely be this high
         # Will sometimes reach error in the 1000s though
-        self.runSingleLinearRegression(algorithm, max_mse = 400)
+        self.runSingleLinearRegression(algorithm, max_mse = 2000)
     
     def testSingleLinearRegression3K(self):
         algorithm = KNN_Regression(3)
         
-        # Expect high amounts of error, although will not always be this high
+        # Expect high amounts of error, although will very rarely be this high
         # Will sometimes reach error in the 1000s though
-        self.runSingleLinearRegression(algorithm, max_mse = 400)
+        self.runSingleLinearRegression(algorithm, max_mse = 2000)
 
 
 class LinearRegressionTester(RegressionTester):
