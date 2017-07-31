@@ -18,6 +18,11 @@ Run all tests using `python -m unittest discover` in base directory of repositor
 
 Do note that many of the tests will create graphs, so it can be fairly ugly to watch...
 
+## Sources
+
+I learned about many of the algorithms from [Machine Learning by Stanford University](https://www.coursera.org/learn/machine-learning/).
+Any other sources have been cited.
+
 ### Algorithm Philosopy
 * Keep them as simple as possible!
    * Any additional data transformation should be handled by external classes (like RangeScaler).
