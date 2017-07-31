@@ -6,7 +6,7 @@ These implementation should NOT be used in an actual project, since they are not
 
 ## Installation
 
-Required modules:
+Requires Python 3, with modules:
 - numpy
 - matplotlib
 - sklearn (for datasets)
