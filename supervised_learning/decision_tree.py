@@ -8,8 +8,6 @@ sys.path.append(dir_path + "/..")
 
 from util.data_operation import entropy
 
-# TODO: Make sure all group -> class
-
 # TODO: Later will have categorical="none", then can be changed to "all" or
 # a 1d array
 # TODO: Add regularization - max depth, few observations in node, entropy change is small,
