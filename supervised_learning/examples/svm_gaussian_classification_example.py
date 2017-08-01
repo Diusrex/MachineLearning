@@ -23,7 +23,7 @@ def linearly_separable():
     acc = accuracy(y_pred, y_test)
     
     class_estimation_graph(2, X_test, y_test, y_pred,
-                           "SVM linear %.2f%% Accuracy on Linearly Separable.\nShape is true class, color is estimate" % (acc*100))
+                           "SVM linear %.2f%% Accuracy on Linearly Separable" % (acc*100))
 
 def with_data_error_with_slack():
     n_classes = 2
@@ -39,7 +39,7 @@ def with_data_error_with_slack():
     acc = accuracy(y_pred, y_test)
     
     class_estimation_graph(n_classes, X_test, y_test, y_pred,
-                           "SVM linear %.2f%% Accuracy.\nShape is true class, color is estimate" % (acc*100))
+                           "SVM linear %.2f%% Accuracy" % (acc*100))
     
 def main():
     if svm_able_to_run:

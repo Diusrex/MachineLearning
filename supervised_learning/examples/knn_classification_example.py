@@ -27,7 +27,7 @@ def main():
     acc = accuracy(y_pred, y_test)
     
     class_estimation_graph(n_classes, X_test, y_test, y_pred,
-                           "KNN %.2f%% Accuracy.\nShape is true class, color is estimate" % (acc*100))
+                           "KNN %.2f%% Accuracy" % (acc*100))
 
 if __name__ == "__main__":
     main()

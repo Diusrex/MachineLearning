@@ -21,7 +21,7 @@ def class_estimation_graph(num_class, X, y, y_pred, formatted_title):
         Predicted class for each sample.
     
     formatted_title
-        Title to display for plot.
+        Title to display for plot. Will add extra context to the title.
     """
     true_class_shapes = ['o', 's', '*', 'v', '8']
     estimate_class_color = ['Blue', 'Green', 'Pink', 'Grey', 'Red']
@@ -49,7 +49,7 @@ def class_estimation_graph(num_class, X, y, y_pred, formatted_title):
                             color=estimate_class_color[estimated_class], label = label)
     
     plt.legend(fontsize=8)
-    plt.title(formatted_title)
+    plt.title(formatted_title + "\nShape is true class, color is estimate")
     plt.show()
 
 
