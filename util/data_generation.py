@@ -1,4 +1,5 @@
 from sklearn import datasets
+import numpy as np
 
 def create_linearly_separable_two_class():
     """
@@ -26,4 +27,17 @@ def create_linearly_separable_two_class():
     X = X[wanted_data]
     y = y[wanted_data]
     
+    return X, y
+
+def create_2d_categorical_feature_two_class():
+    """
+    
+    Note that the dataset is not generated randomly and is x-or of both x1,
+    x2 being odd.
+    
+    """
+    # Note: Toy problem for now, should probably be made more complex...
+    # We care about a mix of X1, X2
+    X = np.array([[x1, x2] for x1 in range(10) for x2 in range(10)])
+    y = X[:, 0] > X[:, 1]
     return X, y
