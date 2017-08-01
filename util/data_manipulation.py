@@ -151,5 +151,6 @@ class UnitLengthScaler(BaseScaler):
         # Only divide column, not subtracting anything
         return 0
     
-    def _calculate_factor_adjustment(self, column):
+    def _calculate_factor_divisor(self, column):
         return np.linalg.norm(column)
+
