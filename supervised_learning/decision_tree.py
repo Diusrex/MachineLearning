@@ -38,6 +38,17 @@ class DecisionTree(object):
             
         def predict(self, row):
             return self._estimate
+        
+        def print_tree(self, offset):
+            """
+            Parameters
+            --------
+            
+            offset : string
+                All spaces that should be printed before printing out any content
+                from the node.
+            """
+            print(offset + "Class:", str(self._estimate))
     
     class CategoricalNode(object):
         """
@@ -56,6 +67,24 @@ class DecisionTree(object):
             else:
                 # The feature value wasn't encountered, so go with default class
                 return self._default_class
+        
+        def print_tree(self, offset):
+            """
+            Parameters
+            --------
+            
+            offset : string
+                All spaces that should be printed before printing out any content
+                from the node.
+            """
+            print(offset + "Split on", self._feature_index_split_on,
+                  "had class dist", list(self._class_and_counts),
+                  "and default", self._default_class)
+            value_offset = offset + "  "
+            child_offset = offset + "    "
+            for feature_value in self._children_dict:
+                print(value_offset + "value", str(feature_value))
+                self._children_dict[feature_value].print_tree(child_offset)
     
     def fit(self, X, y):
         """
@@ -199,6 +228,9 @@ class DecisionTree(object):
         return np.apply_along_axis(self._base_node.predict,
                                    axis=1, arr=X)
     
+    def print_tree(self):
+        self._base_node.print_tree("")
+        
     def _get_unique_class_vals_and_counts(self, examples):
         """
         Given a set of rows, will return all of the unique classes and their counts.
