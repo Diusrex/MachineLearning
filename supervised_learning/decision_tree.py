@@ -146,9 +146,6 @@ class DecisionTree(object):
         features_values : array-like, shape [n_available_features]
             All possible values for each feature that has not yet been used.
             Element at index i corresponds to features_values at index i.
-        
-        default_class : numeric
-            From the parent node, what was the most common class
         """
         # There should always be at least one example to save on memory.
         assert(len(examples) > 0)
