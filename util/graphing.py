@@ -93,7 +93,7 @@ def decision_boundary_graph(X, y, ml_algorithm, formatted_ml_info, points_per_di
             np.array([[x1, x2] for x2 in y_vec for x1 in x_vec]))
     
     # Need to reshape it to be 2D instead of 1D
-    Z.shape = (100, 100)
+    Z.shape = (points_per_dimension, points_per_dimension)
     
     ax.contour(x_vec, y_vec,
                Z,
