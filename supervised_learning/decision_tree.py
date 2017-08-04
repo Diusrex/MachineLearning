@@ -58,7 +58,7 @@ class DecisionTree(object):
     
     def __init__(self, algorithm_to_use='ID3', max_depth=None, min_node_samples=None):
         if algorithm_to_use == 'ID3':
-            self._split_algorithm = _ID3Algorithm()
+            self._split_algorithm = _ID3_Algorithm()
         else:
             raise ValueError("algorithm_to_use value '{}' is not valid, only ID3 is supported".format(algorithm_to_use))
         
@@ -407,7 +407,7 @@ class _SplitAlgorithm(ABC):
         """
         pass
 
-class _ID3Algorithm(_SplitAlgorithm):
+class _ID3_Algorithm(_SplitAlgorithm):
     # TODO: More theory!
     """
     Implements the ID3 (Iterative Dichotomiser 3) Algorithm invented by Ross Quinlan.
