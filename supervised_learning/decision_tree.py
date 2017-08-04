@@ -177,39 +177,28 @@ class DecisionTree(object):
             not self._has_enough_samples_for_node(examples.shape[0]):
             return DecisionTree.LeafNode(most_common_class, zip(class_values, class_counts))
         
-        # Otherwise calculate the best feature, which will minimize entropy.
-        best_feature_index_in_available = 0
-        best_feature_value_to_group_map = self._split_algorithm.create_feature_map(
-                examples, available_features[best_feature_index_in_available],
-                features_values[best_feature_index_in_available])
+        best_uncertainty = None
         
-        best_examples_by_group = self._separate_examples_into_groups(
-                examples, available_features[best_feature_index_in_available],
-                features_values[best_feature_index_in_available],
-                best_feature_value_to_group_map)
+        best_feature_index_in_available = None
+        best_feature_value_to_group_map = None
+        best_examples_by_group = None
         
-        best_uncertainty = self._uncertainty(best_examples_by_group)
+        for feature_index_in_available in range(len(available_features)):
+            for feature_value_to_group_map, examples_by_group in\
+                self._split_algorithm.create_splits_from_feature_values(
+                        examples, available_features[feature_index_in_available],
+                        features_values[feature_index_in_available]):
+                
+                uncertainty = self._uncertainty(examples_by_group)
+                
+                if best_uncertainty is None or best_uncertainty > uncertainty:
+                    best_uncertainty = uncertainty
+                    best_feature_index_in_available = feature_index_in_available
+                    best_examples_by_group = examples_by_group
+                    best_feature_value_to_group_map = feature_value_to_group_map
         
-        for feature_index_in_available in range(1, len(available_features)):
-            feature_value_to_group_map = self._split_algorithm.create_feature_map(
-                    examples, available_features[feature_index_in_available],
-                    features_values[feature_index_in_available])
-            
-            examples_by_group = self._separate_examples_into_groups(
-                    examples, available_features[feature_index_in_available],
-                    features_values[feature_index_in_available],
-                    feature_value_to_group_map)
-            
-            uncertainty = self._uncertainty(examples_by_group)
-            
-            if uncertainty < best_uncertainty:
-                best_uncertainty = uncertainty
-                best_feature_index_in_available = feature_index_in_available
-                best_examples_by_group = examples_by_group
-                best_feature_value_to_group_map = feature_value_to_group_map
         
         chosen_feature_index_in_examples = available_features[best_feature_index_in_available]
-        
         
         # Calculate for the groups
         groups_dict = {}
@@ -278,42 +267,6 @@ class DecisionTree(object):
         return np.apply_along_axis(self._base_node.predict,
                                    axis=1, arr=X)
     
-    def _separate_examples_into_groups(self, examples, feature_index, feature_values, feature_value_to_group_map):
-        """
-        Given the examples, what feature to split on and the feature val to group map,
-        will return a map from group to all of the samples that are contained in that
-        group.
-        
-        Parameters
-        ---------
-        examples : array-like, shape [n_samples, n_features + 1]
-            Input array of samples with features and class. class identifier
-            must have been appended to end of rows.
-            
-        feature_index : numeric
-            Index for the feature for the samples.
-        
-        feature_values
-            All possible values for the current feature.
-        
-        feature_value_to_group_map : function
-            Given the feature, return what group the feature is a part of.
-        """
-        examples_by_group = {}
-        for feature_val in feature_values:
-            examples_with_val = examples[examples[:, feature_index] == feature_val, :]
-            # Don't bother when doesn't have any samples.
-            if examples_with_val.size == 0:
-                continue
-            
-            group_val = feature_value_to_group_map(feature_val)
-            if group_val not in examples_by_group:
-                examples_by_group[group_val] = examples_with_val
-            else:
-                examples_by_group[group_val] = np.vstack(
-                        (examples_by_group[group_val], examples_with_val))
-        
-        return examples_by_group
     
     def _uncertainty(self, examples_split_by_groups):
         """
@@ -374,10 +327,14 @@ class _SplitAlgorithm(ABC):
     Currently only supports categorical variables.
     """
     @abstractmethod
-    def create_feature_map(self, examples, feature_index, feature_values):
+    def create_splits_from_feature_values(self, examples, feature_index, feature_values):
         """
-        A function to go from feature value to how it will be stored in the decision
-        tree split node.
+        A function to create a SplitWithFeatureValues instance given the feature we
+        care about and all the examples.
+        
+        Iterating through the returned object will yield each
+        [feature_value_to_group_map, groups]
+        for every possible split.
         
         For example, can cause it to have a child node for each feature value by
         mapping each value to itself. Or can force a binary tree by mapping each
@@ -396,8 +353,51 @@ class _SplitAlgorithm(ABC):
         features_values : array-like, shape [n_available_features]
             All possible values for each feature that can still be used.
             Element at index i corresponds to features_values at index i.
+        
+        Returns
+        ---------
+        Array-like of all splits. Split will contain [feature_value_to_group_map, groups]
+        pairs.
         """
         pass
+    
+    def _separate_examples_into_groups(self, examples, feature_index, feature_values, feature_value_to_group_map):
+        """
+        Given the examples, what feature to split on and the feature val to group map,
+        will return a map from group to all of the samples that are contained in that
+        group.
+        
+        Parameters
+        ---------
+        examples : array-like, shape [n_samples, n_features + 1]
+            Input array of samples with features and class. class identifier
+            must have been appended to end of rows.
+            
+        feature_index : numeric
+            Index for the feature for the samples.
+        
+        feature_values
+            All possible values for the current feature.
+        
+        feature_value_to_group_map : function
+            Given the feature, return what group the feature is a part of.
+        """
+        examples_by_group = {}
+        for feature_val in feature_values:
+            examples_with_val = examples[examples[:, feature_index] == feature_val, :]
+            # Don't bother when doesn't have any samples.
+            if examples_with_val.size == 0:
+                continue
+            
+            group_val = feature_value_to_group_map(feature_val)
+            if group_val not in examples_by_group:
+                examples_by_group[group_val] = examples_with_val
+            else:
+                examples_by_group[group_val] = np.vstack(
+                        (examples_by_group[group_val], examples_with_val))
+        
+        return examples_by_group
+    
     
     @abstractmethod
     def should_remove_feature_after_use(self):
@@ -433,10 +433,8 @@ class _ID3_Algorithm(_SplitAlgorithm):
         However, I haven't been able to find a good resource to explain the\
         theory behind C4.5.
     """
-    # Theory: Split categorical out into all values. Will not split on it again later
-    # So any tree form.
-    # Advantages + disadvantages?
-    def create_feature_map(self, examples, feature_index, feature_values):
+    
+    def create_splits_from_feature_values(self, examples, feature_index, feature_values):
         """
         See _SplitAlgorithm for descriptions of the function
         """
@@ -452,7 +450,11 @@ class _ID3_Algorithm(_SplitAlgorithm):
             # Something that should never be in the values
             return "Some ridiculous string that should never show up so will not be recognized"
         
-        return feature_map
+        groups = self._separate_examples_into_groups(examples, feature_index, feature_values,
+                                                     feature_map)
+        # Only creates one split
+        split = (feature_map, groups,)
+        return (split,)
         
     def should_remove_feature_after_use(self):
         """
