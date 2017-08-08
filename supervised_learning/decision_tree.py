@@ -59,6 +59,8 @@ class DecisionTree(object):
     def __init__(self, algorithm_to_use='ID3', max_depth=None, min_node_samples=None):
         if algorithm_to_use == 'ID3':
             self._split_algorithm = _ID3_Algorithm()
+        elif algorithm_to_use == 'CART':
+            self._split_algorithm = _CART_Algorithm()
         else:
             raise ValueError("algorithm_to_use value '{}' is not valid, only ID3 is supported".format(algorithm_to_use))
         
@@ -89,11 +91,12 @@ class DecisionTree(object):
         Splits the tree based on the different values possible for the given feature
         """
         def __init__(self, default_class, class_and_counts, feature_index_split_on, feature_value_to_group_map,
-                     groups_dict):
+                     group_split_explanation, groups_dict):
             self._default_class = default_class
             self._class_and_counts = class_and_counts
             self._feature_index_split_on = feature_index_split_on
             self._feature_value_to_group_map = feature_value_to_group_map
+            self._group_split_explanation = group_split_explanation
             self._groups_dict = groups_dict
             
         def predict(self, row):
@@ -113,13 +116,14 @@ class DecisionTree(object):
                 All spaces that should be printed before printing out any content
                 from the node.
             """
-            print(offset + "Split on", self._feature_index_split_on,
+            print(offset + "Split on feature", self._feature_index_split_on,
+                  self._group_split_explanation,
                   "had class-count dist", list(self._class_and_counts),
                   "and default", self._default_class)
             value_offset = offset + "  "
             child_offset = offset + "    "
             for feature_value in self._groups_dict:
-                print(value_offset + "value", str(feature_value))
+                print(value_offset + "group", str(feature_value) + ":")
                 self._groups_dict[feature_value].print_tree(child_offset)
     
     def fit(self, X, y):
@@ -134,6 +138,8 @@ class DecisionTree(object):
         y : array-like, shape [n_samples,]
             Input array of expected results.
         """
+        self._split_algorithm.check_data_is_valid(X, y)
+        
         available_features = [i for i in range(0, X.shape[1])]
         
         features_values = [np.unique(column) for column in X.T]
@@ -181,10 +187,11 @@ class DecisionTree(object):
         
         best_feature_index_in_available = None
         best_feature_value_to_group_map = None
+        best_group_split_explanation = None
         best_examples_by_group = None
         
         for feature_index_in_available in range(len(available_features)):
-            for feature_value_to_group_map, examples_by_group in\
+            for feature_value_to_group_map, examples_by_group, group_split_explanation in\
                 self._split_algorithm.create_splits_from_feature_values(
                         examples, available_features[feature_index_in_available],
                         features_values[feature_index_in_available]):
@@ -196,6 +203,7 @@ class DecisionTree(object):
                     best_feature_index_in_available = feature_index_in_available
                     best_examples_by_group = examples_by_group
                     best_feature_value_to_group_map = feature_value_to_group_map
+                    best_group_split_explanation = group_split_explanation
         
         
         chosen_feature_index_in_examples = available_features[best_feature_index_in_available]
@@ -238,6 +246,7 @@ class DecisionTree(object):
         
         return DecisionTree.CategoricalNode(most_common_class, zip(class_values, class_counts),
                                             chosen_feature_index_in_examples, best_feature_value_to_group_map,
+                                            best_group_split_explanation,
                                             groups_dict)
     
     def _reached_max_depth(self, depth):
@@ -327,13 +336,30 @@ class _SplitAlgorithm(ABC):
     Currently only supports categorical variables.
     """
     @abstractmethod
+    def check_data_is_valid(self, X, y):
+        """
+        Ensures that all X + y data given is correct. Currently assumes is provided with
+        categorical data.
+        
+        If the data doesn't meet all requirements, then will raise an exception.
+        
+        Parameters
+        ---------
+        X : array-like, shape [n_samples, n_features]
+            Input array of features.
+            
+        y : array-like, shape [n_samples,]
+            Input array of expected results.
+        """
+        pass
+    @abstractmethod
     def create_splits_from_feature_values(self, examples, feature_index, feature_values):
         """
         A function to create a SplitWithFeatureValues instance given the feature we
         care about and all the examples.
         
         Iterating through the returned object will yield each
-        [feature_value_to_group_map, groups]
+        [feature_value_to_group_map, groups, explanation]
         for every possible split.
         
         For example, can cause it to have a child node for each feature value by
@@ -356,7 +382,8 @@ class _SplitAlgorithm(ABC):
         
         Returns
         ---------
-        Array-like of all splits. Split will contain [feature_value_to_group_map, groups]
+        Array-like of all splits. Split will contain
+        [feature_value_to_group_map, groups, explanation]
         pairs.
         """
         pass
@@ -408,7 +435,6 @@ class _SplitAlgorithm(ABC):
         pass
 
 class _ID3_Algorithm(_SplitAlgorithm):
-    # TODO: More theory!
     """
     Implements the ID3 (Iterative Dichotomiser 3) Algorithm invented by Ross Quinlan.
     Currently only supports categorical data.
@@ -428,11 +454,18 @@ class _ID3_Algorithm(_SplitAlgorithm):
         variables have many possible values.
         - Data can be overfitted if small sample is used.
         - Can be unwieldy, due to chance of relatively simple data creating a large tree.
-        - In general, C4.5 is better due tonC4.5 natively handling continous +\
+        - In general, C4.5 is better due to C4.5 natively handling continous +\
         discrete, incomplete data points, pruning, and adding different weights.\
         However, I haven't been able to find a good resource to explain the\
         theory behind C4.5.
     """
+    def check_data_is_valid(self, X, y):
+        """
+        See _SplitAlgorithm for descriptions of the function
+        """
+        # Doesn't need to do any checks, so long as everything is categorical
+        # will run fine.
+        pass
     
     def create_splits_from_feature_values(self, examples, feature_index, feature_values):
         """
@@ -453,7 +486,7 @@ class _ID3_Algorithm(_SplitAlgorithm):
         groups = self._separate_examples_into_groups(examples, feature_index, feature_values,
                                                      feature_map)
         # Only creates one split
-        split = (feature_map, groups,)
+        split = (feature_map, groups, "different group per value")
         return (split,)
         
     def should_remove_feature_after_use(self):
@@ -463,3 +496,129 @@ class _ID3_Algorithm(_SplitAlgorithm):
         # For categorical features, will split the different categories completely
         # apart, so won't split on them again.
         return True
+
+class _CART_Algorithm(_SplitAlgorithm):
+    """
+    Implements the CART (Categorical and Regression Tree) Algorithm. Will create
+    a binary tree.
+    Currently only supports categorical data with two possible categories. The
+    value of the categories doesn't matter.
+    
+    For categorical data, will order the data based on proportion of 1 label
+    for each value of categorical feature. Will then try splitting at each value,
+    where each value with a lower proportion goes to one group, rest goes to the other.
+    
+    Normally does include cost-complexity pruning, but will add that later.
+    Pruning is done after creating the tree.
+    
+    See _SplitAlgorithm for descriptions of the functions.
+    
+    Theory
+    -------
+        - Compared to ID3 will create a more compressed (but possibly far taller)\
+        tree due to only splitting into two different groups.
+        - Can be more generalizable than ID3 due to only splitting into two different\
+        groups.
+        - Should normally be run with cost-complexity pruning, due to this algorithm\
+        being able to continously split the data.
+    """
+    def check_data_is_valid(self, X, y):
+        """
+        See _SplitAlgorithm for descriptions of the function
+        """
+        unique_values = np.unique(y)
+        if len(unique_values) != 2:
+            raise ValueError("CART requires binary data for categorical classification")
+    
+    def create_splits_from_feature_values(self, examples, feature_index, feature_values):
+        """
+        See _SplitAlgorithm for descriptions of the function
+        """
+        # First, split the data up into different values.
+        m = {}
+        for value in feature_values:
+            m[value] = value
+        examples_by_value = self._separate_examples_into_groups(
+                examples, feature_index, feature_values, lambda val: m[val])
+        
+        # Which category will be used for the proportion.
+        category_for_proportion = np.unique(examples[:, -1])[0]
+        
+        # Now, order the values by proportion.
+        # Do this by grouping the value with proportion, then sorting
+        proportion_for_value = []
+        for value in examples_by_value:
+            examples = examples_by_value[value]
+            proportion = np.mean(examples[:, -1] == category_for_proportion)
+            proportion_for_value.append((proportion, value))
+        
+        # Order from most to least.
+        proportion_for_value.sort()
+        
+        index_to_value = {}
+        value_to_index = {}
+        
+        # Will be transfering values from group 1 to group 0.
+        group_0_elements = np.zeros((0, examples.shape[1]))
+        group_1_elements = np.zeros((0, examples.shape[1]))
+        # Generate mapping from value to index and index to value.
+        # Also put all values into group_1 in order of index.
+        for idx, proportion_and_value in enumerate(proportion_for_value):
+            value = proportion_and_value[1]
+            index_to_value[idx] = value
+            value_to_index[value] = idx
+            
+            group_1_elements = np.vstack((group_1_elements, examples_by_value[value]))
+        
+        splits = []
+        # Separator is the first element in group 1. All indicies before it
+        # will be in group 0.
+        for separator in range(1, len(index_to_value)):
+            # Samples with value index just before separator need to be transferred
+            # from group 1 to group 0.
+            value_previous = index_to_value[separator - 1]
+            examples_for_prev_value = examples_by_value[value_previous]
+            group_0_elements = np.vstack((group_0_elements, examples_for_prev_value))
+            # Remove the elements
+            group_1_elements = group_1_elements[examples_for_prev_value.shape[0]:,:]
+            
+            feature_map = _CART_Algorithm._Splitter(value_to_index, separator)
+            groups = {False: group_0_elements, True: group_1_elements}
+            
+            values_in_groups = {False: [], True: []}
+            for value in value_to_index:
+                group = feature_map(value)
+                values_in_groups[group].append(value)
+            
+            explanation = "group splits: " + str(values_in_groups)
+            splits.append((feature_map, groups, explanation))
+        
+        return splits
+        
+        
+    def should_remove_feature_after_use(self):
+        """
+        See _SplitAlgorithm for descriptions of the function
+        """
+        # For categorical or discrete variables, can perform further binary splits.
+        return False
+
+    class _Splitter(object):
+        """
+        Class to act as feature_value_to_group_map. Wraps around the value to index map
+        and separator, ensuring that later iterations changes to separator value
+        don't change earlier iterations.
+        """
+        def __init__(self, value_to_index, separator):
+            self._value_to_index = value_to_index
+            self._separator = separator
+            
+        def __call__(self, value):
+            """
+            Return which group the value belongs to. Values that are recognized
+            will go to groups False (group 0) or True (group 1).
+            """
+            if value in self._value_to_index:
+                return self._value_to_index[value] >= self._separator
+            # Only groups created are True and False
+            return -1
