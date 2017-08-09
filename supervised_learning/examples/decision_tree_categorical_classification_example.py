@@ -9,7 +9,7 @@ from util.data_manipulation import train_test_split
 from util.data_operation import accuracy
 from util.graphing import class_estimation_graph
 
-from supervised_learning.decision_tree import DecisionTree
+from supervised_learning.decision_tree import DecisionTreeClassifier
 
 def train_and_run_dtree(decision_tree, X_train, X_test,
                         y_train, y_test, format_string, should_print_tree):
@@ -29,10 +29,10 @@ def main(should_print_tree=False):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_proportion=0.2)
     
     
-    train_and_run_dtree(DecisionTree(algorithm_to_use='ID3'), X_train, X_test,
+    train_and_run_dtree(DecisionTreeClassifier(algorithm_to_use='ID3'), X_train, X_test,
                   y_train, y_test, 'Decision Tree ID3 (accuracy {:.2f}%)',
                   should_print_tree)
-    train_and_run_dtree(DecisionTree(algorithm_to_use='CART'), X_train, X_test,
+    train_and_run_dtree(DecisionTreeClassifier(algorithm_to_use='CART'), X_train, X_test,
                   y_train, y_test, 'Decision Tree CART (accuracy {:.2f}%)',
                   should_print_tree)
     

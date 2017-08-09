@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import cm
 
 def class_estimation_graph(num_class, X, y, y_pred, formatted_title):
     """
@@ -127,4 +128,49 @@ def decision_boundary_graph(X, y, ml_algorithm, formatted_ml_info, points_per_di
     
     plt.legend(fontsize=8)
     plt.title(formatted_ml_info + "\nColor is the true class. Shape is estimated class.")
+    plt.show()
+
+def display_2d_regression(x1, x2, y_pred, y_actual, title):
+    """
+    Given 2-d grid, as well as the true + estimated class for each sample in grid,
+    create a plot to make it easy to see how the estimation differed from the actual.
+    
+    Parameters
+    --------
+    num_class : integer
+        Number of classes. Assumes classes are labelled from 0 to num_class - 1
+    
+    X : array-like, shape [n_samples, 2]
+        x1 x2 coordinates for each sample.
+        
+    y : array-like, shape [n_samples,]
+        Expected class for each sample.
+    
+    y_pred : array-like, shape [n_samples,]
+        Predicted class for each sample.
+    
+    formatted_title
+        Title to display for plot. Will add extra context to the title.
+    """
+    diff = y_pred - y_actual
+    
+    plt.figure()
+    
+    plt.scatter(x1, x2, c=np.abs(diff), cmap='hot')
+    plt.colorbar()
+    plt.title(title + "\nAbsolute Difference")
+    plt.show()
+    
+    plt.figure()
+    
+    plt.scatter(x1, x2, c=y_pred, cmap=cm.jet)
+    plt.colorbar()
+    plt.title(title + "\nPredicted")
+    plt.show()
+    
+    plt.figure()
+    
+    plt.scatter(x1, x2, c=y_actual, cmap=cm.jet)
+    plt.colorbar()
+    plt.title(title + "\nActual")
     plt.show()

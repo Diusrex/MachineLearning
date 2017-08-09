@@ -41,3 +41,20 @@ def create_2d_categorical_feature_two_class():
     X = np.array([[x1, x2] for x1 in range(10) for x2 in range(10)])
     y = X[:, 0] > X[:, 1]
     return X, y
+
+def create_1d_categorical_feature_regression():
+    """
+    Creates a 1 categorical feature data set, which will have
+    multiple different values at each category
+    """
+    X = np.array([[x1, x2] for x1 in range(10) for x2 in range(10)])
+    
+    # Have 2 values for each category - slightly above and slightly below x1 * x2
+    base = X[:,0] + X[:, 1]
+    below = base - 0.5
+    above = base + 0.5
+    
+    X = np.vstack([X, X])
+    y = np.append(below, above)
+    
+    return X, y

@@ -8,26 +8,24 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
-from util.data_operation import entropy
+from util.data_operation import entropy, mean_square_error
 
 # TODO: Later will have categorical="none", then can be changed to "all" or
 # a 1d array
 # TODO: Add regularization - max depth, few observations in node, entropy change is small,
 # cross-validation entropy starts to increase.
-class DecisionTree(object):
+class DecisionTree(ABC):
     """
-    Generates a decision tree to classify future data using the
-    provided examples with categorical data.
+    Generates a decision tree to predict future data using the provided examples
+    with categorical data.
     
-    Currently assumes only given categorical data.
-    
-    Determines feature to split on by minimizing uncertainty (currently just entropy).
+    Determines feature to split on by minimizing uncertainty.
     
     Parameters
     ---------
     algorithm_to_use : string
         What decision tree generation algorithm should be used. Currently only
-        ID3 is supported.
+        ID3 and CART are supported.
     
     max_depth : numeric
         If provided, will limit the depth that the tree can reach. May help
@@ -37,11 +35,14 @@ class DecisionTree(object):
         If provided, any nodes that have less samples than the min will
         be forced to be a leaf.
     
+    tuning_param
+        How should the cost-complexity pruning proceed. If 'find', 
+    
     Theory
     --------
         - Decision Trees are helpful when need to understand how different\
-        values will change the class.
-        - Only examine one feature at a time, so create rectangular classification boxes.
+        values will change the expected result.
+        - Only examine one feature at a time, so creates rectangular estimation boxes.
         - Very high variance, structure may heavily change due to sampling.
         - Splitting is locally greedy due to minimizing uncertainty at current step, and\
         is likely to reach a local optimum.
@@ -68,9 +69,9 @@ class DecisionTree(object):
         self._min_node_samples = min_node_samples
     
     class LeafNode(object):
-        def __init__(self, estimate, class_and_counts):
+        def __init__(self, estimate, values_and_counts):
             self._estimate = estimate
-            self._class_and_counts = class_and_counts
+            self._values_and_counts = values_and_counts
             
         def predict(self, row):
             return self._estimate
@@ -84,16 +85,16 @@ class DecisionTree(object):
                 All spaces that should be printed before printing out any content
                 from the node.
             """
-            print(offset + "Class:", str(self._estimate), "had class-count dist", list(self._class_and_counts))
+            print(offset + "Estimate:", str(self._estimate), "had value-count dist", list(self._values_and_counts))
     
     class CategoricalNode(object):
         """
         Splits the tree based on the different values possible for the given feature
         """
-        def __init__(self, default_class, class_and_counts, feature_index_split_on, feature_value_to_group_map,
+        def __init__(self, default_estimate, values_and_counts, feature_index_split_on, feature_value_to_group_map,
                      group_split_explanation, groups_dict):
-            self._default_class = default_class
-            self._class_and_counts = class_and_counts
+            self._default_estimate = default_estimate
+            self._values_and_counts = values_and_counts
             self._feature_index_split_on = feature_index_split_on
             self._feature_value_to_group_map = feature_value_to_group_map
             self._group_split_explanation = group_split_explanation
@@ -105,8 +106,8 @@ class DecisionTree(object):
             if group in self._groups_dict:
                 return self._groups_dict[group].predict(row)
             else:
-                # The group wasn't encountered, so go with default class
-                return self._default_class
+                # The group wasn't encountered, so go with default.
+                return self._default_estimate
         
         def print_tree(self, offset):
             """
@@ -118,8 +119,8 @@ class DecisionTree(object):
             """
             print(offset + "Split on feature", self._feature_index_split_on,
                   self._group_split_explanation,
-                  "had class-count dist", list(self._class_and_counts),
-                  "and default", self._default_class)
+                  "had value-count dist", list(self._values_and_counts),
+                  "and default", self._default_estimate)
             value_offset = offset + "  "
             child_offset = offset + "    "
             for feature_value in self._groups_dict:
@@ -156,7 +157,7 @@ class DecisionTree(object):
         Parameters
         ---------
         examples : array-like, shape [n_samples, n_features + 1]
-            Input array of samples with features and class. class identifier
+            Input array of samples with features and expected value. The expected value
             must have been appended to end of rows.
         
         available_features : array-like, shape [n_available_features]
@@ -173,15 +174,14 @@ class DecisionTree(object):
         """
         # There should always be at least one example.
         assert(len(examples) > 0)
+        unique_values, values_counts = self._get_unique_values_and_counts(examples)
+        best_estimate = self._get_best_estimate(unique_values, values_counts)
         
-        class_values, class_counts = self._get_unique_class_vals_and_counts(examples)
-        most_common_class = class_values[np.argmax(class_counts)]
-        
-        # Force as leaf if only 1 class, no features, hit max depth, or doesn't have enough samples.
-        if len(class_values) == 1 or len(available_features) == 0 or\
+        # Force as leaf if only 1 value, no features, hit max depth, or doesn't have enough samples.
+        if len(unique_values) == 1 or len(available_features) == 0 or\
             self._reached_max_depth(depth) or\
             not self._has_enough_samples_for_node(examples.shape[0]):
-            return DecisionTree.LeafNode(most_common_class, zip(class_values, class_counts))
+            return DecisionTree.LeafNode(best_estimate, zip(unique_values, values_counts))
         
         best_uncertainty = None
         
@@ -218,7 +218,7 @@ class DecisionTree(object):
             
             feature_values_orig = next_features_values[best_feature_index_in_available]
             
-            # Only bother to set the feature values group if it won't actally be immediately
+            # Only bother to update the feature values group if it won't be immediately
             # removed
             if not self._split_algorithm.should_remove_feature_after_use():
                 next_features_values[best_feature_index_in_available] =\
@@ -244,10 +244,26 @@ class DecisionTree(object):
             if not self._split_algorithm.should_remove_feature_after_use():
                 features_values[best_feature_index_in_available] = feature_values_orig
         
-        return DecisionTree.CategoricalNode(most_common_class, zip(class_values, class_counts),
+        return DecisionTree.CategoricalNode(best_estimate, zip(unique_values, values_counts),
                                             chosen_feature_index_in_examples, best_feature_value_to_group_map,
                                             best_group_split_explanation,
                                             groups_dict)
+    
+    @abstractmethod
+    def _get_best_estimate(self, unique_values, values_counts):
+        """
+        Given all of the different unique values and their count, return
+        the estimate that will minimize the error.
+        
+        Parameters
+        ---------
+        unique_values : array-like, shape[num_unique_values]
+            All of the different unique values at the current node.
+            
+        values_counts : array-like, shape[num_unique_values]
+            The number of occurrences for each value in unique_values.
+        """
+        pass
     
     def _reached_max_depth(self, depth):
         return self._max_depth is not None and depth >= self._max_depth
@@ -271,11 +287,84 @@ class DecisionTree(object):
         Returns
         ------
         array-like, shape [n_samples]
-            Class predicted by tree for each sample.
+            Estimate predicted by tree for each sample.
         """
         return np.apply_along_axis(self._base_node.predict,
                                    axis=1, arr=X)
     
+    @abstractmethod
+    def _uncertainty(self, examples_split_by_groups):
+        """
+        Given how the examples are separated into different groups, will
+        calculate the uncertainty for the groups distribution.
+        
+        Currently only entropy is used as the measure of uncertainty.
+        
+        Parameters
+        ---------
+        examples_split_by_groups : map from group to examples in group
+            Contains all of the samples
+        
+        Returns
+        -------
+        Non-negative value for the entropy that would result from splitting the data
+        on the given split.
+        """
+        pass
+    
+    def print_tree(self):
+        self._base_node.print_tree("")
+        
+    def _get_unique_values_and_counts(self, examples):
+        """
+        Given a set of rows, will return all of the unique values and their counts.
+        
+        Parameters
+        ---------
+        examples : array-like, shape [n_samples, n_features + 1]
+            Input array of samples with features and expected value. The expected value
+            must have been appended to end of rows.
+        
+        Returns
+        ----------
+        (unique_values, counts) where counts[i] is number of occurrences of
+        unique_values[i].
+        """
+        return np.unique(examples[:, -1], return_counts=True)
+    
+    def get_feature_params(self):
+        pass
+
+class DecisionTreeClassifier(DecisionTree):
+    """
+    Generates a decision tree to predict the class of future data using provided
+    features.
+    
+    Determines feature to split on by minimizing uncertainty (currently just entropy).
+    
+    Parameters
+    ---------
+    algorithm_to_use : string
+        What decision tree generation algorithm should be used. Currently only
+        ID3 and CART are supported.
+    
+    max_depth : numeric
+        If provided, will limit the depth that the tree can reach. May help
+        prevent overfitting.
+        
+    min_node_samples : numeric
+        If provided, any nodes that have less samples than the min will
+        be forced to be a leaf.
+    """
+    def __init__(self, algorithm_to_use='ID3', max_depth=None, min_node_samples=None):
+        super().__init__(algorithm_to_use=algorithm_to_use, max_depth=max_depth,
+             min_node_samples=min_node_samples)
+        
+    def _get_best_estimate(self,
+                           unique_values, values_counts):
+        # Just return the most common class
+        return unique_values[np.argmax(values_counts)]
+        
     
     def _uncertainty(self, examples_split_by_groups):
         """
@@ -297,36 +386,71 @@ class DecisionTree(object):
         penalty = 0
         for group in examples_split_by_groups:
             examples_in_group = examples_split_by_groups[group]
-            _, counts = self._get_unique_class_vals_and_counts(examples_in_group)
+            _, counts = self._get_unique_values_and_counts(examples_in_group)
             # TODO: Be able to customize the penalty used.
             # Note that I should also update the comments to reflect this.
             penalty += entropy(counts)
         
         return penalty
+
+
+class DecisionTreeRegression(DecisionTree):
+    """
+    Generates a decision tree to predict the value of future data using provided
+    features.
     
-    def print_tree(self):
-        self._base_node.print_tree("")
+    Determines feature to split on by minimizing uncertainty (currently just MSE).
+    
+    Parameters
+    ---------
+    algorithm_to_use : string
+        What decision tree generation algorithm should be used. Currently only
+        ID3 and CART are supported.
+    
+    max_depth : numeric
+        If provided, will limit the depth that the tree can reach. May help
+        prevent overfitting.
         
-    def _get_unique_class_vals_and_counts(self, examples):
+    min_node_samples : numeric
+        If provided, any nodes that have less samples than the min will
+        be forced to be a leaf.
+    """
+    def __init__(self, algorithm_to_use='ID3', max_depth=None, min_node_samples=None):
+        super().__init__(algorithm_to_use=algorithm_to_use, max_depth=max_depth,
+             min_node_samples=min_node_samples)
+        
+    def _get_best_estimate(self,
+                           unique_values, values_counts):
+        # Select (weighted) average
+        return np.average(unique_values, weights=values_counts)
+    
+    def _uncertainty(self, examples_split_by_groups):
         """
-        Given a set of rows, will return all of the unique classes and their counts.
+        Given how the examples are separated into different groups, will
+        calculate the uncertainty for the groups distribution.
+        
+        The uncertainty within a group is the MSE from the best estimate (mean of all
+        samples) to each samples value.
         
         Parameters
         ---------
-        examples : array-like, shape [n_samples, n_features + 1]
-            Input array of samples with features and class. class identifier
-            must have been appended to end of rows.
+        examples_split_by_groups : map from group to examples in group
+            Contains all of the samples
         
         Returns
-        ----------
-        (unique_values, counts) where counts[i] is number of occurrences of
-        unique_values[i].
+        -------
+        Sum of the MSE for each group.
         """
-        return np.unique(examples[:, -1], return_counts=True)
-    
-    def get_feature_params(self):
-        pass
-
+        penalty = 0
+        for group in examples_split_by_groups:
+            examples_in_group = examples_split_by_groups[group]
+            all_y_values = examples_in_group[:, -1]
+            # For each group, best value for estimate would be the mean
+            best_estimate = np.mean(all_y_values)
+            
+            penalty += mean_square_error(all_y_values, best_estimate)
+        
+        return penalty
 
 class _SplitAlgorithm(ABC):
     """
@@ -369,7 +493,7 @@ class _SplitAlgorithm(ABC):
         Parameters
         ---------
         examples : array-like, shape [n_samples, n_features + 1]
-            Input array of samples with features and class. class identifier
+            Input array of samples with features and expected value. The expected value
             must have been appended to end of rows.
         
         available_features : array-like, shape [n_available_features]
@@ -397,7 +521,7 @@ class _SplitAlgorithm(ABC):
         Parameters
         ---------
         examples : array-like, shape [n_samples, n_features + 1]
-            Input array of samples with features and class. class identifier
+            Input array of samples with features and expected value. The expected value
             must have been appended to end of rows.
             
         feature_index : numeric
@@ -463,7 +587,7 @@ class _ID3_Algorithm(_SplitAlgorithm):
         """
         See _SplitAlgorithm for descriptions of the function
         """
-        # Doesn't need to do any checks, so long as everything is categorical
+        # Doesn't need to do any checks, so long as all inputs are categorical
         # will run fine.
         pass
     
@@ -521,6 +645,9 @@ class _CART_Algorithm(_SplitAlgorithm):
         groups.
         - Should normally be run with cost-complexity pruning, due to this algorithm\
         being able to continously split the data.
+        - Treat categorical variables with many different values carefully - they\
+        can easily be overfit, due to having ~ 2^(#diff values) different possible\
+        splits.
     """
     def check_data_is_valid(self, X, y):
         """
@@ -528,7 +655,8 @@ class _CART_Algorithm(_SplitAlgorithm):
         """
         unique_values = np.unique(y)
         if len(unique_values) != 2:
-            raise ValueError("CART requires binary data for categorical classification")
+            raise ValueError("CART requires binary data for categorical classification. " +
+                             "> 2 classes or regression will not work.")
     
     def create_splits_from_feature_values(self, examples, feature_index, feature_values):
         """
