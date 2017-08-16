@@ -6,7 +6,7 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
-from supervised_learning.internal.base_model_tf import BaseTFModel, vocab
+from supervised_learning.internal.base_model_tf import BaseTFModel, vocab, BaseTFModelOptions
 
 class LinearRegressionTF(BaseTFModel):
     """
@@ -19,7 +19,7 @@ class LinearRegressionTF(BaseTFModel):
     Parameters
     --------
     
-    options: BaseTFModeOptions
+    options: BaseTFModelOptions
         All of the options that should be used. If not provided, all of the options
         will be specified by the flags in internal.base_model_tf.
     

@@ -6,7 +6,7 @@ import sys
 dir_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(dir_path + "/..")
 
-from supervised_learning.internal.base_model_tf import BaseTFModel, vocab
+from supervised_learning.internal.base_model_tf import BaseTFModel, vocab, BaseTFModelOptions
 
 class LogisticRegressionTF(BaseTFModel):
     """
@@ -20,7 +20,7 @@ class LogisticRegressionTF(BaseTFModel):
         everything else will be class 0.
         If None, predict will return the probability of the sample being class 1.
     
-    options: BaseTFModeOptions
+    options: BaseTFModelOptions
         All of the options that should be used. If not provided, all of the options
         will be specified by the flags in internal.base_model_tf.
         

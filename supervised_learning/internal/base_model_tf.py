@@ -37,11 +37,13 @@ flags.DEFINE_integer('save_summary_every', 10,
 
 FLAGS = flags.FLAGS
 
-class BaseTFModeOptions(object):
+class BaseTFModelOptions(object):
     """
     All of the standard options for a tensorflow model. If not provided, will
     default to flags instead. The flags all have the exact same name as the
     parameters to this class.
+    
+    This should be imported in every file when BaseTFModel is imported
     
     Parameters
     --------
@@ -80,7 +82,7 @@ class BaseTFModel(ABC):
     """
     Base Tensorflow Model.
     
-    For a model inheriting from this class, it must pass the BaseTFModeOptions
+    For a model inheriting from this class, it must pass the BaseTFModelOptions
     along.
     
     Currently just defaults to GradientDescentOptimizer, will expand this
@@ -88,13 +90,13 @@ class BaseTFModel(ABC):
     
     Parameters
     --------
-    options: BaseTFModeOptions
+    options: BaseTFModelOptions
         All of the options that should be used. If not provided, all of the options
         will be specified by the flags.
     """
     def __init__(self, options):
         if options is None:
-            options = BaseTFModeOptions()
+            options = BaseTFModelOptions()
         optimizer = tf.train.GradientDescentOptimizer(options.learning_rate)
         self._options  = options
         self._optimizer = optimizer
@@ -141,7 +143,7 @@ class BaseTFModel(ABC):
             summaries_tensor = tf.summary.merge_all()
             for step in range(self._options.num_iterations):
                 self._sess.run(
-                            [self._get_operation_by_name(vocab.optimizer)],
+                            self._get_operation_by_name(vocab.optimizer),
                             {self._get_tensor_by_op_name(vocab.x):X,
                              self._get_tensor_by_op_name(vocab.y):y})
                 
