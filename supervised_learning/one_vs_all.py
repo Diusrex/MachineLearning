@@ -5,7 +5,7 @@ class OneVsAllClassification(object):
     Give a classifier that is ONLY able to predict how likely a binary classification is,
     predict which of N classes each element is in.
     
-    Good example is the LogisticRegression classifier.
+    Good example is the LogisticRegression (or LogisticRegressionTF) classifier.
     
     Parameters
     --------
