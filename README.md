@@ -7,6 +7,7 @@ These implementation should NOT be used in an actual project, since they are not
 ## Installation
 
 Requires Python 3, with modules:
+- tensorflow (for _tf.py files)
 - numpy
 - matplotlib
 - sklearn (for datasets)
