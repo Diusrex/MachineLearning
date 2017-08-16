@@ -16,7 +16,7 @@ from util.data_manipulation import train_test_split
 from supervised_learning.linear_regression_tf import LinearRegressionTF
 
 
-def main(_):
+def main(_=None):
     # Just has one feature to make it easy to graph.
     X, y = datasets.make_regression(n_samples=200, n_features=1,
                                     bias=random.uniform(-10, 10), noise=5)

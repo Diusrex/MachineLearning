@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 from sklearn import datasets
+
 
 # Add base directory of project to path.
 import os
@@ -13,7 +15,7 @@ from util.data_manipulation import train_test_split
 
 from supervised_learning.logistic_regression_tf import LogisticRegressionTF
 
-def main():
+def main(_=None):
     # Just has one feature to make it easy to graph.
     X, y = datasets.make_classification(n_samples=200, n_features=1, n_informative=1, n_redundant=0,
                                         n_clusters_per_class=1, flip_y=0.1)
@@ -41,4 +43,4 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    tf.app.run()
