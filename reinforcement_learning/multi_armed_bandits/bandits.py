@@ -15,7 +15,7 @@ class MultiArmedBandit(object):
     Parameters
     --------
     bandits : array-like containing Bandit class, shape [num_bandits,]
-        All of the possible bandits that can be selec4ted.
+        All of the possible bandits that can be selected.
     """
     def __init__(self, bandits):
         self._bandits = bandits
@@ -72,7 +72,7 @@ class Bandit(ABC):
     A bandit arm that can be selected for some reward drawn from a distribution.
     
     Contains its own random, so the ith pull of an instance will result in the
-    same reward, no matter the order + how many times other bandits have been pulled.\
+    same reward, no matter the order + how many times other bandits have been pulled.
     
     Parameters
     --------
@@ -169,4 +169,63 @@ class PercentageBandit(Bandit):
         """
         return "PercentageBandit ({}%), reward {} fail {}".format(self._success_chance,
                                  self._success_reward, self._fail_reward)
+
+class NormalDistributionBandit(Bandit):
+    """
+    A bandit that returns a reward drawn from normal (Gaussian) distribution with mean u
+    and standard deviation sigma.
+    
+    Parameters
+    --------
+    mean
+        Mean value for normal distribution rewards are drawn from.
+    
+    sigma
+        Standard deviation for normal distribution rewards are drawn from.
+    """
+    def __init__(self, mean, sigma):
+        super().__init__()
+        self._mean = mean
+        self._sigma = sigma
+    
+    def pull(self):
+        """
+        Return a reward drawn from this bandits distribution.
+        """
+        return self.random.gauss(self._mean, self._sigma)
+    
+    def expected_value(self):
+        """
+        Return the expected value for this bandit.
+        """
+        return self._mean
+    
+    def describe(self):
+        """
+        Returns a formatted string to describe the implementation + parameters
+        for this bandit.
+        """
+        return "NormalDistributionBandit Mean {} Std Dev {}".format(self._mean, self._sigma)
+
+class KNormalDistributionBandits(MultiArmedBandit):
+    """
+    Specialization of MultiArmedBandit that will create K normal distribution
+    bandits by drawing a mean from a normal distribution for each.
+    """
+    def __init__(self, K, mean_selection_sigma = 1, bandit_sigma = 1):
+        # Setup bandits with fake means. Will change their means in regenerate
+        bandits =  [NormalDistributionBandit(0, bandit_sigma)
+                   for _ in range(K)]
+        super().__init__(bandits)
+        self._mean_selection_sigma = mean_selection_sigma
+        
+        self.regenerate()
+    
+    def regenerate(self):
+        """
+        Will regenerate the random seed + mean for each of the bandits. Can be used to
+        allow running the algorithms again with slightly different rewards.
+        """
+        for bandit in self._bandits:
+            bandit._mean = random.gauss(0, self._mean_selection_sigma)
 
