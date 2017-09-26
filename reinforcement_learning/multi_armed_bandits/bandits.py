@@ -1,4 +1,5 @@
 import random
+import numbers
 
 from abc import ABC, abstractmethod
 
@@ -67,6 +68,7 @@ class MultiArmedBandit(object):
         
         return [best_value - bandit.expected_value() for bandit in self._bandits]
 
+
 class Bandit(ABC):
     """
     A bandit arm that can be selected for some reward drawn from a distribution.
@@ -95,6 +97,14 @@ class Bandit(ABC):
         self.random.seed(seed)
         
         self._random_state = self.random.getstate()
+        
+        self._on_regenerate()
+        
+    def _on_regenerate(self):
+        """
+        Hook for when regenerating the bandit.
+        """
+        pass
 
     def reset(self):
         """
@@ -102,6 +112,14 @@ class Bandit(ABC):
         ith pull will return the same reward.
         """
         self.random.setstate(self._random_state)
+        
+        self._on_reset()
+        
+    def _on_reset(self):
+       """
+       Hook for when resetting the bandit.
+       """
+       pass
     
     @abstractmethod
     def pull(self):
@@ -124,6 +142,7 @@ class Bandit(ABC):
         for this bandit.
         """
         pass
+
 
 class PercentageBandit(Bandit):
     """
@@ -170,6 +189,7 @@ class PercentageBandit(Bandit):
         return "PercentageBandit ({}%), reward {} fail {}".format(self._success_chance,
                                  self._success_reward, self._fail_reward)
 
+
 class NormalDistributionBandit(Bandit):
     """
     A bandit that returns a reward drawn from normal (Gaussian) distribution with mean u
@@ -207,6 +227,7 @@ class NormalDistributionBandit(Bandit):
         """
         return "NormalDistributionBandit Mean {} Std Dev {}".format(self._mean, self._sigma)
 
+
 class KNormalDistributionBandits(MultiArmedBandit):
     """
     Specialization of MultiArmedBandit that will create K normal distribution
@@ -229,3 +250,122 @@ class KNormalDistributionBandits(MultiArmedBandit):
         for bandit in self._bandits:
             bandit._mean = random.gauss(0, self._mean_selection_sigma)
 
+
+class SequenceBandit(Bandit):
+    """
+    Will return values from the different sequences it is given. They can either be a
+    number or another Bandit in which case pull, reset, regenerate, etc. will be
+    called as necessary.
+    
+    Note that if repeat is False, the last item will be treated as essentially the
+    only return.
+    
+    Parameters
+    --------
+    sequence : array-like, shape [n_items,]
+        Array of values to return from. Should be a tuple of (item, count).
+        If item is a number, will return it without any alteration, otherwise,
+        will treat it like a Bandit.
+        Cannot be a tuple!
+        
+    repeat : boolean
+        After reaching end of sequence, should it repeat the sequence. If False,
+        will continue to return the last element in sequence.
+    
+    seed
+        Seed to use for random.seed.
+    """
+    # Weight to use for last item in sequence if not repeating.
+    _final_weight = 100000000
+    
+    def __init__(self, sequence, repeat, seed = None):
+        if repeat:
+            # It can't be a tuple, since will be changed.
+            if isinstance(sequence, tuple):
+                sequence = [c for c in sequence]
+            # Change the count of last item in sequence to be essentially infinite
+            sequence[-1] = (sequence[-1][0], SequenceBandit._final_weight)
+        
+        self._sequence = sequence
+        
+        super().__init__(seed=seed)
+        
+        self._current_return = 0
+        self._current_return_count = 0
+    
+    def pull(self):
+        current = self._sequence[self._current_return]
+        item = current[0]
+        
+        # Increase and check count
+        self._current_return_count += 1
+        if self._current_return_count <= current[1]:
+            self._current_return += 1
+            self._current_return_count = 0
+            
+            if self._current_return >= len(self._sequence):
+                # Can assume wants repeat, otherwise would be infinite.
+                self._current_return = 0
+        
+        # Return the item.
+        if self._is_numeric(item):
+            return item
+        else:
+            return item.pull()
+                
+    def expected_value(self):
+        total = 0
+        count = 0
+        
+        for current in self._sequence:
+            item = current[0]
+            if not self._is_numeric(item):
+                item = item.expected_value()
+                
+            c = current[1]
+            total += item * c
+            count += c
+        
+        return total / count
+    
+    def describe(self):
+        described_sequence = []
+        for current in self._sequence:
+            item = current[0]
+            if not self._is_numeric(item):
+                item = item.describe()
+            
+            described_sequence.append([item, current[1]])
+        
+        return "SequenceBandit {}".format(described_sequence)
+    
+    def _is_numeric(self, item_in_sequence):
+        """
+        Returns true if the item is a bandit, and should be pulled.
+        Otherwise, assumes it is a number and returns normally.
+        """
+        return isinstance(item_in_sequence, numbers.Number)
+    
+    def _on_regenerate(self):
+        """
+        Need to make sure that any bandits this contains are reset properly.
+        """
+        self._current_return = 0
+        self._current_return_count = 0
+        
+        for current in self._sequence:
+            item = current[0]
+            if not self._is_numeric(item):
+                item.regenerate()
+    
+    def _on_reset(self):
+        """
+        Need to make sure that any bandits this contains are reset properly.
+        """
+        self._current_return = 0
+        self._current_return_count = 0
+        
+        for current in self._sequence:
+            item = current[0]
+            if not self._is_numeric(item):
+                item.reset()
