@@ -2,8 +2,8 @@ import numpy as np
 import copy
 from multiprocessing import Pool as ThreadPool
 
-_TOTAL_REGRET = 0
-_ALL_ACTIONS = 1
+_TOTAL_REWARD = 0
+_ALL_REGRETS = 1
 
 def run_multiple_times(num_times, num_steps, bandit, algorithms):
     """
@@ -27,15 +27,13 @@ def run_multiple_times(num_times, num_steps, bandit, algorithms):
     algorithm_total_rewards = [[] for algorithm in algorithms]
     algorithm_regret_by_step = [[[] for step in range(num_steps)] for algorithm in algorithms]
     for results_for_run in results:
-        regrets = bandit.regret_per_action()
         for algo in range(len(algorithms)):
-            action_selected = results_for_run[algo][_ALL_ACTIONS]
+            regrets_of_actions = results_for_run[algo][_ALL_REGRETS]
             
-            algorithm_total_rewards[algo].append(results_for_run[algo][_TOTAL_REGRET])
+            algorithm_total_rewards[algo].append(results_for_run[algo][_TOTAL_REWARD])
             
             for step in range(num_steps):
-                action = action_selected[step]
-                algorithm_regret_by_step[algo][step].append(regrets[action])
+                algorithm_regret_by_step[algo][step].append(regrets_of_actions[step])
     
     return (algorithm_total_rewards, algorithm_regret_by_step)
 
@@ -60,13 +58,15 @@ def run(num_steps, bandit, algorithm):
     bandit - has try 
     """
     total_reward = 0
-    actions = []
+    
+    regret_by_action = bandit.regret_per_action()
+    regrets = []
     for _ in range(num_steps):
         action = algorithm.select_action()
         reward = bandit.pull_bandit(action)
         algorithm.update_from_action(action, reward)
         
         total_reward += reward
-        actions.append(action)
+        regrets.append(regret_by_action[action])
     
-    return [total_reward, actions]
+    return [total_reward, regrets]
