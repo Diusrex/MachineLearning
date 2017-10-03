@@ -21,6 +21,8 @@ class MultiArmedBandit(object):
     def __init__(self, bandits):
         self._bandits = bandits
         
+        self._regrets = self.regret_per_action()
+        
     def regenerate(self):
         """
         Will regenerate the random seed for each of the bandits. Can be used to
@@ -28,6 +30,7 @@ class MultiArmedBandit(object):
         """
         for bandit in self._bandits:
             bandit.regenerate()
+        self._regrets = self.regret_per_action()
     
     def reset(self):
         """
@@ -37,12 +40,21 @@ class MultiArmedBandit(object):
         """
         for bandit in self._bandits:
             bandit.reset()
+        self._regrets = self.regret_per_action()
     
     def pull_bandit(self, bandit_chosen):
         """
         Pull the selected bandit, returning the result of pulling that bandit once.
         """
-        return self._bandits[bandit_chosen].pull()
+        regret = self._regrets[bandit_chosen]
+        reward = self._bandits[bandit_chosen].pull()
+        
+        # If the expected_value for all bandits has changed, will NEED to
+        # regenerate everything - best may have changed.
+        if self._bandits[bandit_chosen].expected_value_changed():
+            self._regrets = self.regret_per_action()
+        
+        return reward, regret
     
     def actions(self):
         """
@@ -62,6 +74,10 @@ class MultiArmedBandit(object):
         Returns the regret for selecting each bandit, which is the difference between
         the optimal expected value and the bandits expected value.
         Will be array-like, shape [num_bandits,].
+        
+        It is recommended to use the regret return from pull_bandit to calculate regret,
+        because the true regret per action can change, but the list returned by
+        this function will not be updated.
         """
         expected_values = self.expected_value_per_bandit()
         best_value = max(expected_values)
@@ -134,6 +150,14 @@ class Bandit(ABC):
         Return the expected value for this bandit.
         """
         pass
+    
+    def expected_value_changed(self):
+        """
+        Has the expected value changed. Should only be called when the bandit
+        was just pulled.
+        """
+        # By default, most don't change their expected value.
+        return False
     
     @abstractmethod
     def describe(self):
@@ -257,8 +281,8 @@ class SequenceBandit(Bandit):
     number or another Bandit in which case pull, reset, regenerate, etc. will be
     called as necessary.
     
-    Note that if repeat is False, the last item will be treated as essentially the
-    only return.
+    Note that if repeat and expected_value_is_current are False, the expected value
+    will essentially be just be the expeted value of the last item.
     
     Parameters
     --------
@@ -271,6 +295,10 @@ class SequenceBandit(Bandit):
     repeat : boolean
         After reaching end of sequence, should it repeat the sequence. If False,
         will continue to return the last element in sequence.
+        
+    expected_value_is_current : boolean
+        If true, expected value will be the expected value of current item in sequence.
+        Otherwise, it will be the weighted mean of expected value for all elements.
     
     seed
         Seed to use for random.seed.
@@ -278,8 +306,9 @@ class SequenceBandit(Bandit):
     # Weight to use for last item in sequence if not repeating.
     _final_weight = 100000000
     
-    def __init__(self, sequence, repeat, seed = None):
-        if repeat:
+    def __init__(self, sequence, repeat, expected_value_is_current=True, seed=None):
+        # Ensure the count of last element is huge
+        if not repeat:
             # It can't be a tuple, since will be changed.
             if isinstance(sequence, tuple):
                 sequence = [c for c in sequence]
@@ -292,6 +321,8 @@ class SequenceBandit(Bandit):
         
         self._current_return = 0
         self._current_return_count = 0
+        
+        self._expected_value_is_current = expected_value_is_current
     
     def pull(self):
         current = self._sequence[self._current_return]
@@ -299,7 +330,7 @@ class SequenceBandit(Bandit):
         
         # Increase and check count
         self._current_return_count += 1
-        if self._current_return_count <= current[1]:
+        if self._current_return_count >= current[1]:
             self._current_return += 1
             self._current_return_count = 0
             
@@ -312,8 +343,21 @@ class SequenceBandit(Bandit):
             return item
         else:
             return item.pull()
+        
+    def expected_value_changed(self):
+        # Only changed if we are reporting the current and it changed.
+        return self._expected_value_is_current and self._current_return_count == 0
                 
     def expected_value(self):
+        # If only relying on current expected, then should just return the current
+        # items expected value.
+        if self._expected_value_is_current:
+            current = self._sequence[self._current_return]
+            item = current[0]
+            if not self._is_numeric(item):
+                item = item.expected_value()
+            return item
+        
         total = 0
         count = 0
         

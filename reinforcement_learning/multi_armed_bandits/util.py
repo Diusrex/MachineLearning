@@ -59,14 +59,13 @@ def run(num_steps, bandit, algorithm):
     """
     total_reward = 0
     
-    regret_by_action = bandit.regret_per_action()
     regrets = []
     for _ in range(num_steps):
         action = algorithm.select_action()
-        reward = bandit.pull_bandit(action)
+        reward, regret = bandit.pull_bandit(action)
         algorithm.update_from_action(action, reward)
         
         total_reward += reward
-        regrets.append(regret_by_action[action])
+        regrets.append(regret)
     
     return [total_reward, regrets]
