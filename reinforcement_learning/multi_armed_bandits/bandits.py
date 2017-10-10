@@ -1,5 +1,6 @@
 import random
 import numbers
+import numpy as np
 
 from abc import ABC, abstractmethod
 
@@ -21,6 +22,12 @@ class MultiArmedBandit(object):
     def __init__(self, bandits):
         self._bandits = bandits
         
+        self._reset_state()
+        
+    def _reset_state(self):
+        """
+        Will reset the state whenever the bandit is regenerated or reset.
+        """
         self._regrets = self.regret_per_action()
         
     def regenerate(self):
@@ -30,7 +37,7 @@ class MultiArmedBandit(object):
         """
         for bandit in self._bandits:
             bandit.regenerate()
-        self._regrets = self.regret_per_action()
+        self._reset_state()
     
     def reset(self):
         """
@@ -40,7 +47,7 @@ class MultiArmedBandit(object):
         """
         for bandit in self._bandits:
             bandit.reset()
-        self._regrets = self.regret_per_action()
+        self._reset_state()
     
     def pull_bandit(self, bandit_chosen):
         """
@@ -67,7 +74,7 @@ class MultiArmedBandit(object):
         Returns the expected value for each bandit.
         Will be array-like, shape [num_bandits,].
         """
-        return [bandit.expected_value() for bandit in self._bandits]
+        return np.array([bandit.expected_value() for bandit in self._bandits])
     
     def regret_per_action(self):
         """
@@ -81,9 +88,7 @@ class MultiArmedBandit(object):
         """
         expected_values = self.expected_value_per_bandit()
         best_value = max(expected_values)
-        
-        return [best_value - bandit.expected_value() for bandit in self._bandits]
-
+        return best_value - expected_values
 
 class Bandit(ABC):
     """
